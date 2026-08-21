@@ -25,8 +25,12 @@ select = ["E", "F", "I", "N", "W", "B", "S"]
 # (`SomethingError`); el dominio de este proyecto se nombra en español, donde
 # el equivalente es el prefijo (`ErrorDeAlgo`). Lleva la misma información.
 ignore = ["N818"]
-# S101: assert está permitido en pruebas — es el mecanismo de pytest.
-per-file-ignores = { "tests/*" = ["S101"] }
+# Excepciones solo para pruebas, cada una con su motivo:
+#   S101 — `assert` es el mecanismo de pytest, no un descuido.
+#   S105/S106/S107 — los tokens literales de las pruebas son valores de
+#     relleno contra un transporte simulado. No abren nada. La regla es
+#     correcta y se mantiene activa en src/, que es donde importa.
+per-file-ignores = { "tests/*" = ["S101", "S105", "S106", "S107"] }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
