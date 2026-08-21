@@ -1,0 +1,109 @@
+# =====================================================================
+# MAI · Mesa de Ayuda Inteligente
+# La frontera entre lo que entrego y lo que es mío.
+# Este archivo se crea ANTES que cualquier otro archivo del proyecto.
+# =====================================================================
+
+# --- Plan personal y reglas privadas — NO son entregables -----------
+PLAN_MAI.md
+CLAUDE.local.md
+notas/
+borradores/
+registro_ia.md
+*.privado.md
+*.local.md
+
+# --- Secretos -------------------------------------------------------
+# .env.example SÍ se versiona (nombres de variables, valores vacíos).
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+credenciales*
+secrets*
+
+# --- Insumos entregados por la empresa ------------------------------
+# Nada de lo que la empresa me entregó se versiona, por dos motivos:
+#
+# 1. No es mío. El enunciado, el correo y los materiales ya los tienen los
+#    evaluadores. Versionarlos llena el repositorio de lo que no produje.
+# 2. Riesgo concreto: materiales/revision/pr_para_revision.diff trae una
+#    clave embebida (sk-proj-...). Es falsa, pero un detector automático
+#    de secretos no distingue lo falso de lo real — y un secreto
+#    versionado topa el resultado sin importar el resto de la entrega.
+#
+# Para reproducir: instrucciones en README.md.
+# Para pruebas y CI: tests/fixtures/tickets_muestra.csv (sí versionado).
+INSUMOS/
+materiales/
+datos_originales/
+*.diff
+!docs/**/*.diff
+
+# --- Artefactos regenerables ----------------------------------------
+salida/
+datos_limpios/
+cuarentena/
+reportes/
+chroma_db/
+.chroma/
+*.index
+*.faiss
+embeddings_cache/
+modelos/
+*.pkl
+*.joblib
+
+# --- Bases de datos y registros -------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+logs/
+*.log
+
+# --- Python ---------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+.venv/
+env/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- Cuadernos ------------------------------------------------------
+.ipynb_checkpoints/
+# Los cuadernos SÍ se versionan (entregable de la etapa 5),
+# pero limpiar la salida antes de commitear.
+
+# --- Node / Angular (opcional de la etapa 2) ------------------------
+node_modules/
+.angular/
+frontend/dist/
+
+# --- Herramientas y editores ----------------------------------------
+.claude/
+.cursor/
+.aider*
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Multimedia -----------------------------------------------------
+# El video se entrega por el canal indicado, no por el repositorio.
+*.mp4
+*.mov
+*.mkv
+capturas/
