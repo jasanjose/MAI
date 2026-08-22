@@ -1,0 +1,258 @@
+# MAI · Mesa de Ayuda Inteligente
+
+Solución por etapas para la Prueba Técnica de Nivelación de perfiles IA de
+LA FORTUNA S.A. Recibe solicitudes internas escritas en texto libre, las
+sanea, las clasifica, las responde con base en las políticas vigentes y
+escala a una persona lo que no puede resolver.
+
+---
+
+## Estado de la entrega
+
+| Etapa | Estado | Dónde está |
+|---|---|---|
+| 1 · Fundamentos | ✅ **completa** | `src/mai/`, `sql/`, `tests/` |
+| 2 · Autonomía e integración | 🚧 en curso | `src/mai/api/`, `src/mai/adaptadores/llm/` |
+| 3 · Complejidad y calidad | ⬜ pendiente | — |
+| 4 · Arquitectura | 🚧 parcial | `docs/adr/` (3 de los ADR ya escritos) |
+| 5 · Estrategia | 🚧 parcial | `docs/metricas.md`, `docs/conjunto_referencia.csv` |
+
+**Lo que quedó fuera está declarado en la sección «Límites», al final.** No
+está escondido: reconocer un límite es información útil para quien mantiene
+el sistema.
+
+---
+
+## Instalación
+
+Requiere **Python 3.11 o superior**. Sin base de datos, sin Docker, sin
+servicios externos para correr las pruebas.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+La única dependencia de ejecución es `httpx`. Está justificada en
+[`docs/decisiones.md`](docs/decisiones.md), igual que las de desarrollo
+(`pytest`, `ruff`, `bandit`) y —más importante— igual que **las que se
+decidieron NO usar**.
+
+## Ejecución
+
+### Sanear el histórico
+
+```bash
+python -m mai.limpiar_historico ruta/al/tickets_historicos.csv --salida salida
+```
+
+Produce tres archivos en el directorio de salida y un reporte por consola:
+
+| Archivo | Contenido |
+|---|---|
+| `tickets_limpios.csv` | Registros que superaron normalización y validación |
+| `cuarentena.csv` | Los apartados, **con su motivo y su fila original completa** |
+| `resumen.csv` | Totales por área y por prioridad |
+
+Códigos de salida, para que el proceso sirva dentro de una tubería y no solo
+a mano:
+
+| Código | Significa |
+|---:|---|
+| `0` | Terminó. Incluye el caso de archivo vacío: cero registros es un resultado válido, no un error |
+| `1` | No pudo leer la entrada (no existe, o no es texto UTF-8) |
+| `2` | Más del 10 % de los registros quedó en cuarentena. Ahí el problema no son los datos: es la fuente |
+
+El umbral se ajusta con `--umbral-cuarentena`.
+
+### Pruebas
+
+```bash
+pytest          # 126 pruebas, sin red y sin credenciales
+ruff check .
+bandit -r src/
+```
+
+**Ninguna prueba necesita red, credenciales ni los materiales originales.**
+Usan `tests/fixtures/tickets_muestra.csv`, un archivo curado a mano.
+
+### Reproducir con los materiales originales
+
+Los materiales entregados por la empresa **no se versionan** (ver
+«Seguridad»). Para reproducir, colóquelos en `INSUMOS/` conservando su
+estructura:
+
+```
+INSUMOS/Materiales_Prueba_Tecnica_IA/materiales/
+├── datos/tickets_historicos.csv
+├── datos/esquema.sql
+├── politicas/*.pdf
+├── legacy/legacy_module.py
+└── servicio_mock/
+```
+
+Para el servicio simulado:
+
+```bash
+cd INSUMOS/Materiales_Prueba_Tecnica_IA/materiales/servicio_mock
+pip install -r requirements.txt
+uvicorn app:app --port 8080
+```
+
+> El puerto es configurable con `MAI_MOCK_URL`. Durante el desarrollo el 8080
+> estaba ocupado por otro servicio de la máquina y se usó uno libre; nada del
+> código está atado a un puerto.
+
+---
+
+## Qué hace
+
+### Saneamiento del histórico
+
+Sobre los 2.000 registros entregados:
+
+```
+2000 leídos = 1960 limpios + 40 en cuarentena
+  40  duplicado_exacto
+  68  categoria → Sin clasificar
+  51  area → Sin área
+```
+
+- **Fechas** en los tres formatos del histórico (`2025-03-08`, `08/03/2025`,
+  `08-Abr-2025`) con **mapa explícito de meses en español**.
+- **Catálogos**: las 58 variantes de escritura de `categoria` se reducen a
+  las 12 del catálogo de servicios; 14 de prioridad a 4; 11 de estado a 5;
+  7 de canal a 4.
+- **Validación con cuarentena**: nada se descarta en silencio. Cada registro
+  apartado conserva su motivo y su fila original.
+- **Deduplicación** tras normalizar (ver «Supuestos»).
+- **Reporte de calidad** que cuadra por construcción: leídos = limpios +
+  cuarentena, con una prueba que lo verifica.
+
+### Consumo del servicio externo
+
+[`src/mai/adaptadores/http/cliente_solicitudes.py`](src/mai/adaptadores/http/cliente_solicitudes.py)
+— GET y POST con tiempo de espera explícito, reintento con retroceso
+exponencial, respeto de `Retry-After` y soporte de `Idempotency-Key`.
+
+El servicio falla a propósito: 12 % de 500 y 5 % de 429. Verificado contra
+él: **40 de 40 llamadas exitosas**, 2 necesitaron reintento.
+
+Ninguna excepción de la librería llega al usuario: se traducen a errores del
+dominio con mensaje legible.
+
+### Consultas SQL
+
+[`sql/consultas.sql`](sql/consultas.sql) — agregación por área, join de tres
+tablas y tickets reabiertos, **más los índices propuestos con su
+justificación** (el esquema no trae ninguno a propósito y pide proponerlos).
+
+Se declara también **qué no se indexa y por qué**: `categoria`, `prioridad`
+y `canal` tienen 12, 4 y 4 valores distintos; indexar baja cardinalidad es
+coste de escritura sin beneficio de lectura.
+
+---
+
+## Supuestos
+
+Decisiones que se tomaron por criterio y que otro podría tomar distinto.
+
+1. **Las 12 categorías salieron de los datos, no del enunciado.** Las 58
+   variantes colapsan en 12 al unir sinónimos, y R-01 declara 12. La
+   coincidencia es la evidencia de que el catálogo es ese.
+2. **`fecha_cierre` vacía es un ticket abierto, no un dato sucio.** Son 1.299
+   registros. Tratarlos como error de calidad rompería el dato.
+3. **«Sin clasificar» y la celda vacía son lo mismo**: ausencia de etiqueta.
+   No se crea una decimotercera categoría.
+4. **`reaperturas` vacío cuenta como cero.** No haber reabierto es un dato.
+5. **Un ticket Reabierto, Escalado o En proceso cuenta como abierto**: es
+   trabajo pendiente.
+6. **La tasa de reapertura cuenta tickets, no reaperturas.** Un ticket con
+   tres reaperturas es un ticket reabierto, no tres.
+7. **`formulario` y `Formulario web` se unieron en un solo canal.** Es la
+   interpretación razonable, pero —a diferencia de los sinónimos de
+   categoría— no es un hecho verificable. Si son dos canales distintos, se
+   separan en una línea de `catalogos.py`.
+8. **Deduplicación: se normaliza primero y se deduplica después.** Los 12
+   identificadores repetidos «con contenido distinto» resultaron ser el mismo
+   ticket capturado dos veces: en los 12 cambia solo un espacio sobrante en
+   el asunto, y en 7 la caja de la categoría. Normalizar antes disuelve el
+   conflicto. Para un conflicto que sobreviva a la normalización, **se
+   conserva la captura más completa y la descartada va a cuarentena**; no se
+   usó «la más reciente» porque el histórico no tiene campo de versión y el
+   único orden disponible es el del archivo, que es un hecho del export y no
+   del negocio.
+9. **Umbral de cuarentena del 10 %** para fallar el proceso. Ajustable.
+
+---
+
+## Seguridad
+
+- **Ninguna credencial en el repositorio**, ni en el historial.
+  `.env.example` lleva los nombres con valores vacíos; `.env` está ignorado.
+- **`INSUMOS/` no se versiona.** Además de no ser material propio,
+  `pr_para_revision.diff` contiene una clave embebida: es falsa, pero un
+  detector automático no distingue lo falso de lo real.
+- **Consultas parametrizadas siempre.** Nunca concatenación ni el operador
+  `%`, que parece parametrizado sin serlo.
+- **CSV escrito con el módulo `csv`**, nunca pegando comas. Un asunto como
+  «No enciende, urgente» parte una fila construida a mano y corre todas las
+  columnas siguientes, en silencio.
+- `ruff` (con las reglas de seguridad activas) y `bandit` corren sobre `src/`
+  sin hallazgos. La única excepción documentada es `B311` en la dispersión
+  del retroceso, justificada **en el punto de uso**.
+
+---
+
+## Decisiones documentadas
+
+| Documento | Qué decide |
+|---|---|
+| [`docs/metricas.md`](docs/metricas.md) | Precisión objetivo, latencia p95 y umbrales — **definidos antes de implementar** |
+| [`docs/conjunto_referencia.csv`](docs/conjunto_referencia.csv) | 58 casos etiquetados a mano, con 21 citas verificadas contra los PDF |
+| [`docs/decisiones.md`](docs/decisiones.md) | Alta de dependencias, con lo descartado y su costo |
+| [`docs/adr/ADR-002`](docs/adr/ADR-002-orquestacion.md) | Orquestación propia, sin n8n ni framework de agentes |
+| [`docs/adr/ADR-004`](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md) | Desacoplamiento del proveedor y cadena de reserva |
+| [`docs/adr/ADR-005`](docs/adr/ADR-005-frontera-determinista-probabilistico.md) | Qué resuelve una regla, qué un modelo, y qué se queda sin resolver |
+
+---
+
+## Límites
+
+Lo que **no** quedó hecho, y por qué.
+
+**De la etapa 1:**
+
+- **La segunda pasada con modelo de lenguaje sobre la cuarentena está
+  diseñada ([ADR-005](docs/adr/ADR-005-frontera-determinista-probabilistico.md))
+  pero no implementada.** Dos razones: el pipeline debe correr en integración
+  continua sin red ni credenciales, y sobre estos datos procesaría
+  exactamente cero registros —no hay ni un valor fuera de catálogo—. Se
+  implementa en la etapa 2, donde el adaptador ya existe.
+- **La ruta de cuarentena por fecha inválida no está ejercitada por los datos
+  reales.** El histórico no tiene ni una fecha malformada: 2.000 de 2.000
+  convierten. Esa ruta está probada solo por las pruebas unitarias y por el
+  fixture curado.
+- **Las consultas SQL se verificaron en SQLite, no en MySQL.** No hay motor
+  instalado en la máquina de desarrollo. El esquema carga sin modificaciones
+  y las 10 sentencias corren, pero está declarado que la verificación no fue
+  contra el motor de destino.
+- **El tiempo promedio de atención quedó fuera de las consultas SQL** por
+  portabilidad: el cálculo de días entre fechas difiere en cada motor. Está
+  resuelto en Python sobre datos limpios.
+- **Discrepancia no resuelta en los datos entregados:** 27 de 120 tickets del
+  esquema difieren entre el contador `tickets.reaperturas` y los eventos de
+  `historial_estado`. 36 tienen contador mayor que cero; solo 28 tienen
+  evento. La consulta C3 devuelve ambas fuentes y marca la diferencia en vez
+  de elegir una en silencio, pero **cuál es la correcta es una pregunta para
+  el negocio**, no para el código.
+
+**Del proyecto:**
+
+- **No se recibió la credencial del proveedor de IA** que el enunciado
+  ofrece. Se escribió al canal habilitado. Se usan proveedores propios
+  (Groq, DashScope, OpenAI), lo cual el Anexo A admite siempre que se declare
+  y se explique el criterio; el criterio está en
+  [ADR-004](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md).
+- **Etapas 2 a 5 en curso.** Este README se actualiza al cerrar cada una.
