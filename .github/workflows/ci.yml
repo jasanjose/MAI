@@ -1,0 +1,103 @@
+# CI de MAI · Mesa de Ayuda Inteligente
+#
+# El disparador NO filtra por rama, y eso es deliberado. Los commits en rojo de
+# los defectos del legacy ocurren en ramas de etapa, no en `main`. Si CI solo
+# escuchara `main`, la ejecucion fallida que la etapa 3 exige mostrar no se
+# registraria nunca. Ese es tambien el motivo por el que este archivo se
+# escribe antes de la etapa 2 y no al final: la evidencia se produce sola, pero
+# solo si el vigilante ya esta despierto cuando ocurre el hecho.
+#
+# CI no depende de `INSUMOS/`: la suite corre contra `tests/fixtures/`.
+# CI no necesita red ni credenciales: el proveedor externo se sustituye por un
+# transporte simulado.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  calidad:
+    name: Estilo, seguridad y pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # 3.11 es el piso declarado en pyproject.toml. Se prueba sobre el
+          # minimo: si pasa ahi, pasa en las versiones superiores.
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Instalar el paquete y sus herramientas
+        run: pip install -e ".[dev]"
+
+      - name: Estilo y errores estaticos
+        run: ruff check .
+
+      - name: Analisis estatico de seguridad
+        run: bandit -r src/ -q
+
+      - name: Pruebas
+        run: pytest
+
+  secretos:
+    name: Auditoria de secretos y frontera de git
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # El historial completo, no solo el ultimo commit. Un secreto borrado
+          # despues sigue estando en el historial, y el historial se entrega.
+          fetch-depth: 0
+
+      - name: Buscar credenciales en los archivos versionados
+        run: |
+          # Los patrones van en un archivo aparte para no pelear con el
+          # entrecomillado del shell: dentro del heredoc con delimitador
+          # entre comillas, `["']` es texto literal y nada se expande.
+          #
+          # Este archivo se escanea a si mismo y no se delata: en las tres
+          # lineas, el caracter que sigue al prefijo es `[`, que no pertenece
+          # a ninguna de las clases. Un patron mal escrito fallaria aqui.
+          cat > "$RUNNER_TEMP/patrones.txt" <<'PATRONES'
+          sk-[A-Za-z0-9_-]{16,}
+          api[_-]?key[[:space:]]*=[[:space:]]*["'][^"']{8,}
+          Bearer[[:space:]]+[A-Za-z0-9._-]{20,}
+          PATRONES
+
+          # -I omite binarios. -r evita que grep se quede leyendo stdin si la
+          # lista llegara vacia. `|| true` porque grep devuelve 1 cuando no
+          # encuentra nada, que aqui es el caso sano.
+          hallazgos=$(git ls-files -z | xargs -0 -r grep -nEIf "$RUNNER_TEMP/patrones.txt" || true)
+          if [ -n "$hallazgos" ]; then
+            echo "Credenciales en archivos versionados:"
+            echo "$hallazgos"
+            exit 1
+          fi
+          echo "OK - ningun archivo versionado contiene credenciales"
+
+      - name: Buscar credenciales en el historial
+        run: |
+          hallazgos=$(git log -p --all | grep -nE 'sk-[A-Za-z0-9_-]{16,}' || true)
+          if [ -n "$hallazgos" ]; then
+            echo "Credenciales en el historial:"
+            echo "$hallazgos"
+            exit 1
+          fi
+          echo "OK - el historial no contiene credenciales"
+
+      - name: Verificar que no se versionaron rutas privadas
+        run: |
+          # Aqui grep filtra NOMBRES de archivo, no contenido: por eso este
+          # mismo workflow no se marca a si mismo.
+          rutas=$(git ls-files | grep -E '^INSUMOS/|^materiales/|^ai-docs/|^notas/|\.env$|\.local\.md$|^PLAN_MAI' || true)
+          if [ -n "$rutas" ]; then
+            echo "Rutas privadas versionadas:"
+            echo "$rutas"
+            exit 1
+          fi
+          echo "OK - ninguna ruta privada esta versionada"
