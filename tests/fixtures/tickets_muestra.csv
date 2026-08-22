@@ -1,0 +1,35 @@
+﻿id,fecha_creacion,fecha_cierre,area,categoria,prioridad,canal,solicitante,asunto,descripcion,estado,reaperturas
+TK-M001,2025-03-08,2025-04-19,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Asunto de prueba,Descripción de prueba.,Cerrado,0
+TK-M002,08/03/2025,19/04/2025,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Asunto de prueba,Descripción de prueba.,Cerrado,0
+TK-M003,08-Abr-2025,19-Abr-2025,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Asunto de prueba,Descripción de prueba.,Cerrado,0
+TK-M004,15-Dic-2025,,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Asunto de prueba,Descripción de prueba.,Abierto,0
+TK-M005,01-Ene-2026,,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Asunto de prueba,Descripción de prueba.,En proceso,0
+TK-M006,2025-03-08,,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Ticket abierto sin fecha de cierre,Descripción de prueba.,Abierto,0
+TK-M007,2025-03-08,2025-03-12,,Software,Alta,correo,usuario001@lafortuna.com.co,Área vacía: debe quedar «Sin área»,Descripción de prueba.,Cerrado,0
+TK-M008,2025-03-08,2025-03-12,Aplicaciones,,Alta,correo,usuario001@lafortuna.com.co,Categoría vacía: debe quedar «Sin clasificar»,Descripción de prueba.,Cerrado,0
+TK-M009,2025-03-08,2025-03-12,Aplicaciones,Sin clasificar,Alta,correo,usuario001@lafortuna.com.co,"Sin clasificar literal, no es categoría",Descripción de prueba.,Cerrado,0
+TK-M010,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,,Solicitante vacío,Descripción de prueba.,Cerrado,0
+TK-M011,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Descripción vacía,,Cerrado,0
+TK-M012,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Reaperturas vacío: cuenta como cero,Descripción de prueba.,Cerrado,
+TK-M013,2025-03-08,2025-03-12,Aplicaciones,Software,1-Alta,correo,usuario001@lafortuna.com.co,Prioridad con esquema numerado,Descripción de prueba.,Cerrado,0
+TK-M014,2025-03-08,2025-03-12,Aplicaciones,Software,3-Baja,Teléfono,usuario001@lafortuna.com.co,Prioridad numerada y canal con tilde,Descripción de prueba.,Cerrado,0
+TK-M015,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Estado en mayúsculas,Descripción de prueba.,REABIERTO,2
+TK-M016,2025-03-08,2025-03-12,Aplicaciones,aplicaciones,Alta,correo,usuario001@lafortuna.com.co,Sinónimo de categoría: aplicaciones,Descripción de prueba.,Cerrado,0
+TK-M017,2025-03-08,2025-03-12,Aplicaciones,ORDENES DE COMPRA,Alta,correo,usuario001@lafortuna.com.co,Sinónimo en mayúsculas,Descripción de prueba.,Cerrado,0
+TK-M018,2025-03-08,2025-03-12,Aplicaciones,conectividad,Alta,Formulario web,usuario001@lafortuna.com.co,Sinónimos de categoría y canal,Descripción de prueba.,Cerrado,0
+TK-M019,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,"No enciende, urgente y con ""comillas""","Coma y comillas: si el CSV se construyera a mano, la fila se partiría.",Cerrado,0
+TK-M020,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Duplicado exacto,Descripción de prueba.,Cerrado,0
+TK-M020,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Duplicado exacto,Descripción de prueba.,Cerrado,0
+TK-M021,2025-03-08,2025-03-12,Aplicaciones,compras,Alta,correo,usuario001@lafortuna.com.co,Estado de la orden 4471,Descripción de prueba.,Cerrado,0
+TK-M021,2025-03-08,2025-03-12,Aplicaciones,COMPRAS,Alta,correo,usuario001@lafortuna.com.co,Estado de la orden 4471 ,Descripción de prueba.,Cerrado,0
+TK-M022,2025-03-08,,Aplicaciones,Software,Alta,correo,,Conflicto: captura incompleta,,Abierto,0
+TK-M022,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario077@lafortuna.com.co,Conflicto: captura completa,Detalle completo del caso.,Cerrado,0
+TK-M023,basura,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Fecha con formato no reconocido,Descripción de prueba.,Cerrado,0
+TK-M024,31/02/2025,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Fecha con forma válida pero día inexistente,Descripción de prueba.,Cerrado,0
+TK-M025,15-Xyz-2025,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Mes que no existe en español,Descripción de prueba.,Cerrado,0
+TK-M026,2025-03-10,2025-03-08,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Cierre anterior a la creación,Descripción de prueba.,Cerrado,0
+TK-M027,2025-03-08,no-es-fecha,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Fecha de cierre ilegible,Descripción de prueba.,Cerrado,0
+,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Fila sin identificador,Descripción de prueba.,Cerrado,0
+TK-M028,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Fila sin estado,Descripción de prueba.,,0
+TK-M029,2025-03-08,2025-03-12,Aplicaciones,Software,Alta,correo,usuario001@lafortuna.com.co,Reaperturas no numéricas,Descripción de prueba.,Cerrado,dos
+TK-M030,2025-03-08,2025-03-12,Aplicaciones,Teletrabajo,Alta,correo,usuario001@lafortuna.com.co,Categoría que no existe en el catálogo,Descripción de prueba.,Cerrado,0

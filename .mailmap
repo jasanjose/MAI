@@ -1,0 +1,20 @@
+# Las dos identidades de este historial son la misma persona.
+#
+# Los commits existentes se firmaron con la cuenta de git que estaba activa
+# en esas sesiones de trabajo (hfcastrom). A partir de aqui se firma como
+# jasanjose: la configuracion local del repositorio ya lo fija, y gana sobre
+# la configuracion global de la maquina.
+#
+# Ambas direcciones son correos verificados de la misma cuenta de GitHub,
+# por lo que la web ya atribuye los 19 commits a jasanjose. Este archivo
+# cubre la otra mitad: `git log`, `git shortlog` y `git blame` ejecutados
+# sobre la carpeta .git no consultan a GitHub y seguirian mostrando la
+# identidad antigua sin el.
+#
+# No reescribe nada: los objetos commit quedan intactos y con sus mismos
+# identificadores. Solo le dice a git que, al mostrar el autor, unifique las
+# dos entradas. Se documenta en vez de corregirse en el historial porque
+# reescribir commits ya publicados exigiria `push --force`, y el historial
+# de este repositorio es evidencia de proceso: destruirlo cuesta mas que la
+# inconsistencia que arregla.
+jasanjose <207292148+jasanjose@users.noreply.github.com> hfcastrom <hfcastrom@gmail.com>
