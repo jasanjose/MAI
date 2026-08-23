@@ -3,7 +3,12 @@ name = "mai"
 version = "0.1.0"
 description = "MAI · Mesa de Ayuda Inteligente"
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.27"]
+dependencies = [
+    "httpx>=0.27",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.5",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6", "bandit>=1.7"]
