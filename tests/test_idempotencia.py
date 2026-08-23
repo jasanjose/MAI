@@ -224,11 +224,24 @@ def test_una_peticion_invalida_no_consume_la_clave(cliente):
 
 
 def test_peticiones_simultaneas_con_la_misma_clave_crean_un_solo_recurso(cliente):
-    """El defecto que un `if not existe: crear()` no evita.
+    """Red de regresión. NO es una demostración de la carrera, y conviene
+    decirlo antes de que alguien la lea como si lo fuera.
 
-    Dos peticiones simultáneas consultan antes de que ninguna haya escrito,
-    las dos ven que no existe y las dos crean. La comprobación y la reserva
-    tienen que ser una sola operación indivisible, no dos.
+    Se midió: se sustituyó el registro por uno que consulta y escribe en dos
+    pasos —el error clásico— y esta prueba **siguió pasando** en las tres
+    corridas. Dos causas se suman: el GIL de CPython cambia de hilo en
+    fronteras de bytecode, y `TestClient` encima hace pasar las peticiones
+    por un solo bucle de eventos, así que a nivel HTTP no llegan a solaparse.
+
+    Que la prueba no la vea no significa que la carrera no exista. Llamando a
+    `reservar` directamente, con 64 hilos y 500 claves, la versión sin cerrojo
+    devolvió `NUEVA` 501 veces para 500 claves: un duplicado. En una de dos
+    corridas. Es decir, ocurre de verdad y ocurre poco — que es exactamente el
+    perfil de defecto que llega a producción y nadie logra reproducir.
+
+    Por eso el cerrojo está y la prueba se queda como guarda: detecta un
+    refactor que rompa el flujo por completo, y fija el contrato de que ocho
+    peticiones con la misma clave producen un solo recurso.
     """
     import threading
 

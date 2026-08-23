@@ -26,6 +26,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as ExcepcionHTTP
 
+from mai.dominio.idempotencia import (
+    ClaveIdempotenciaInvalida,
+    ClaveIdempotenciaReutilizada,
+    OperacionEnCurso,
+)
 from mai.dominio.solicitudes import DatosDeSolicitudInvalidos, SolicitudNoEncontrada
 from mai.observabilidad.traza import id_traza_actual
 
@@ -36,6 +41,8 @@ CODIGO_CUERPO_MALFORMADO = "CUERPO_MALFORMADO"
 CODIGO_NO_ENCONTRADO = "RECURSO_NO_ENCONTRADO"
 CODIGO_METODO_NO_PERMITIDO = "METODO_NO_PERMITIDO"
 CODIGO_ERROR_INTERNO = "ERROR_INTERNO"
+CODIGO_CLAVE_REUTILIZADA = "CLAVE_IDEMPOTENCIA_REUTILIZADA"
+CODIGO_OPERACION_EN_CURSO = "OPERACION_EN_CURSO"
 
 MENSAJE_ERROR_INTERNO = (
     "Ocurrió un error inesperado al procesar la solicitud. "
@@ -74,6 +81,33 @@ def registrar_manejadores(app: FastAPI) -> None:
         sus datos.
         """
         return respuesta_de_error(422, CODIGO_VALIDACION, str(error), {"campo": error.campo})
+
+    @app.exception_handler(ClaveIdempotenciaInvalida)
+    async def _clave_invalida(_peticion: Request, error: ClaveIdempotenciaInvalida):
+        """422: la clave de idempotencia en sí no es utilizable."""
+        return respuesta_de_error(
+            422, CODIGO_VALIDACION, str(error), {"campo": "Idempotency-Key"}
+        )
+
+    @app.exception_handler(ClaveIdempotenciaReutilizada)
+    async def _clave_reutilizada(_peticion: Request, error: ClaveIdempotenciaReutilizada):
+        """409: la clave ya se usó para una operación con otro contenido.
+
+        Es un conflicto, no una validación: los datos enviados podrían ser
+        perfectamente válidos. Lo que choca es con algo que ya ocurrió.
+        """
+        return respuesta_de_error(409, CODIGO_CLAVE_REUTILIZADA, str(error))
+
+    @app.exception_handler(OperacionEnCurso)
+    async def _en_curso(_peticion: Request, error: OperacionEnCurso):
+        """409: otra petición con la misma clave se está procesando ahora.
+
+        Se responde en vez de esperar a que la otra termine. Bloquear
+        convertiría un reintento del cliente en una petición colgada, y un
+        cliente que reintenta suele estar reintentando justo porque algo
+        tardó demasiado.
+        """
+        return respuesta_de_error(409, CODIGO_OPERACION_EN_CURSO, str(error))
 
     @app.exception_handler(SolicitudNoEncontrada)
     async def _no_encontrada(_peticion: Request, error: SolicitudNoEncontrada):

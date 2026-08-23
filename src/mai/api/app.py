@@ -16,13 +16,26 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Query, Request, Response, status
+from fastapi import Depends, FastAPI, Header, Query, Request, Response, status
 
 from mai.adaptadores.llm.fabrica import construir_para_clasificacion
+from mai.adaptadores.persistencia.registro_idempotencia_memoria import (
+    RegistroIdempotenciaEnMemoria,
+)
 from mai.adaptadores.persistencia.repositorio_memoria import RepositorioEnMemoria
 from mai.api.errores import registrar_manejadores
 from mai.api.esquemas import ListadoDeSolicitudes, Salud, SolicitudCreada, SolicitudNueva
 from mai.dominio.clasificacion import Clasificador
+from mai.dominio.idempotencia import (
+    RESERVA_CONFLICTO,
+    RESERVA_EN_CURSO,
+    RESERVA_REPETIDA,
+    ClaveIdempotenciaReutilizada,
+    OperacionEnCurso,
+    RegistroDeIdempotencia,
+    calcular_huella,
+    normalizar_clave,
+)
 from mai.dominio.puertos import ProveedorLLM
 from mai.dominio.solicitudes import (
     LIMITE_MAXIMO,
@@ -39,6 +52,9 @@ from mai.observabilidad.traza import (
 )
 
 logger = logging.getLogger(__name__)
+
+CABECERA_IDEMPOTENCIA = "Idempotency-Key"
+CABECERA_REPETIDA = "Idempotency-Replayed"
 
 TITULO = "MAI · Mesa de Ayuda Inteligente"
 VERSION = "0.1.0"
@@ -58,6 +74,7 @@ Todos los errores tienen la misma forma:
 def crear_app(
     proveedor: ProveedorLLM | None = None,
     repositorio: RepositorioSolicitudes | None = None,
+    idempotencia: RegistroDeIdempotencia | None = None,
 ) -> FastAPI:
     """Construye la aplicación.
 
@@ -73,6 +90,9 @@ def crear_app(
 
     app.state.proveedor = proveedor
     app.state.servicio = servicio
+    app.state.idempotencia = (
+        idempotencia if idempotencia is not None else RegistroIdempotenciaEnMemoria()
+    )
 
     registrar_manejadores(app)
     _registrar_traza(app)
@@ -102,6 +122,21 @@ def _registrar_traza(app: FastAPI) -> None:
         return respuesta
 
 
+def _registrar_y_devolver(creada) -> SolicitudCreada:
+    """Registra la creación y traduce al esquema de salida."""
+    logger.info(
+        "solicitud_creada",
+        extra={
+            "id_traza": id_traza_actual(),
+            "codigo": creada.codigo,
+            "area": creada.area,
+            "categoria": creada.categoria,
+            "origen_clasificacion": creada.origen_clasificacion,
+        },
+    )
+    return SolicitudCreada.desde_dominio(creada)
+
+
 def _registrar_rutas(app: FastAPI) -> None:
     @app.get("/salud", response_model=Salud, tags=["operación"], summary="Sonda del servicio")
     async def salud(peticion: Request) -> Salud:
@@ -122,30 +157,81 @@ def _registrar_rutas(app: FastAPI) -> None:
         tags=["solicitudes"],
         summary="Crea una solicitud",
     )
-    async def crear(cuerpo: SolicitudNueva, servicio: ServicioInyectado) -> SolicitudCreada:
+    async def crear(
+        cuerpo: SolicitudNueva,
+        servicio: ServicioInyectado,
+        peticion: Request,
+        respuesta: Response,
+        idempotency_key: Annotated[
+            str | None,
+            Header(
+                alias=CABECERA_IDEMPOTENCIA,
+                description=(
+                    "Clave que identifica la INTENCIÓN de crear esta solicitud. "
+                    "Opcional. Repetir la petición con la misma clave devuelve el "
+                    "recurso ya creado en vez de crear otro."
+                ),
+            ),
+        ] = None,
+    ) -> SolicitudCreada:
         """Crea una solicitud y la clasifica.
 
         Devuelve 201 con la solicitud creada, incluido el código asignado.
-        Responde 422 si algún dato no cumple, y 400 si el cuerpo no es JSON.
+        Responde 422 si algún dato no cumple, 400 si el cuerpo no es JSON, y
+        409 si la clave de idempotencia ya se usó con otro contenido.
+
+        Con `Idempotency-Key`, repetir la petición devuelve el mismo recurso y
+        marca la respuesta con `Idempotency-Replayed: true`. El estado sigue
+        siendo 201 las dos veces: describe el resultado de la operación, y la
+        operación creó el recurso.
         """
-        creada = servicio.crear(
-            asunto=cuerpo.asunto,
-            descripcion=cuerpo.descripcion,
-            area=cuerpo.area,
-            solicitante=cuerpo.solicitante,
-            canal=cuerpo.canal,
-        )
-        logger.info(
-            "solicitud_creada",
-            extra={
-                "id_traza": id_traza_actual(),
-                "codigo": creada.codigo,
-                "area": creada.area,
-                "categoria": creada.categoria,
-                "origen_clasificacion": creada.origen_clasificacion,
-            },
-        )
-        return SolicitudCreada.desde_dominio(creada)
+        datos = {
+            "asunto": cuerpo.asunto,
+            "descripcion": cuerpo.descripcion,
+            "area": cuerpo.area,
+            "solicitante": cuerpo.solicitante,
+            "canal": cuerpo.canal,
+        }
+        clave = normalizar_clave(idempotency_key)
+
+        if clave is None:
+            return _registrar_y_devolver(servicio.crear(**datos))
+
+        registro: RegistroDeIdempotencia = peticion.app.state.idempotencia
+        reserva = registro.reservar(clave, calcular_huella(datos))
+
+        if reserva.estado == RESERVA_CONFLICTO:
+            raise ClaveIdempotenciaReutilizada(
+                "La clave de idempotencia ya se usó para una petición con otro "
+                "contenido. Use una clave distinta para una operación distinta."
+            )
+
+        if reserva.estado == RESERVA_EN_CURSO:
+            raise OperacionEnCurso(
+                "Otra petición con esta misma clave se está procesando. "
+                "Espere y consulte el resultado."
+            )
+
+        if reserva.estado == RESERVA_REPETIDA:
+            respuesta.headers[CABECERA_REPETIDA] = "true"
+            logger.info(
+                "solicitud_repetida",
+                extra={"id_traza": id_traza_actual(), "codigo": reserva.codigo},
+            )
+            return SolicitudCreada.desde_dominio(servicio.obtener(reserva.codigo))
+
+        try:
+            creada = servicio.crear(**datos)
+        except Exception:
+            # La operación no llegó a producir un recurso, así que la clave
+            # debe quedar libre. Si se quemara, el cliente que envió datos
+            # inválidos no podría corregirlos y reintentar con la misma:
+            # quedaría atrapado en un conflicto permanente.
+            registro.liberar(clave)
+            raise
+
+        registro.completar(clave, creada.codigo)
+        return _registrar_y_devolver(creada)
 
     @app.get(
         "/solicitudes/{codigo}",
