@@ -74,6 +74,29 @@ CATALOGO_ESTADO: dict[str, str] = {
     "escalado": "Escalado",
 }
 
+# ── Áreas ───────────────────────────────────────────────────────────────────
+# Las 8 áreas del histórico coinciden exactamente con las 8 de la tabla
+# `areas` del esquema relacional, que además las referencia con clave
+# foránea. No son texto libre: son un catálogo cerrado con respaldo
+# referencial, y por eso una solicitud nueva con un área desconocida es un
+# error de entrada.
+#
+# Ojo con la asimetría, que es deliberada: al SANEAR el histórico un área
+# vacía va a «Sin área» y el registro se conserva (perder un ticket viejo es
+# peor que tenerlo mal etiquetado); al VALIDAR una solicitud nueva un área
+# desconocida se rechaza. Limpiar no debe perder datos; validar no debe
+# aceptar basura.
+CATALOGO_AREA: dict[str, str] = {
+    "aplicaciones": "Aplicaciones",
+    "infraestructura": "Infraestructura",
+    "talento humano": "Talento Humano",
+    "contabilidad": "Contabilidad",
+    "compras": "Compras",
+    "comercial": "Comercial",
+    "operaciones": "Operaciones",
+    "calidad": "Calidad",
+}
+
 CATALOGO_CANAL: dict[str, str] = {
     "correo": "Correo",
     "telefono": "Teléfono",
@@ -83,6 +106,7 @@ CATALOGO_CANAL: dict[str, str] = {
 }
 
 # Lo que puede devolver el modelo de lenguaje y nada más.
+AREAS_VALIDAS = frozenset(CATALOGO_AREA.values())
 CATEGORIAS_VALIDAS = frozenset(CATALOGO_CATEGORIA.values())
 PRIORIDADES_VALIDAS = frozenset(CATALOGO_PRIORIDAD.values())
 ESTADOS_VALIDOS = frozenset(CATALOGO_ESTADO.values())
@@ -165,6 +189,16 @@ def normalizar_prioridad(valor: object) -> ValorNormalizado:
 def normalizar_estado(valor: object) -> ValorNormalizado:
     """Lleva un estado a uno de los cinco del ciclo de vida del ticket."""
     return _normalizar_contra(CATALOGO_ESTADO, valor)
+
+
+def normalizar_area(valor: object) -> ValorNormalizado:
+    """Lleva un área a una de las 8 del esquema relacional.
+
+    Devuelve rechazo ante un área desconocida. Se usa para validar la entrada
+    de la API, no para sanear el histórico: ahí un área vacía va a «Sin área»
+    y el registro se conserva.
+    """
+    return _normalizar_contra(CATALOGO_AREA, valor)
 
 
 def normalizar_canal(valor: object) -> ValorNormalizado:
