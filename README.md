@@ -12,8 +12,8 @@ escala a una persona lo que no puede resolver.
 | Etapa | Estado | Dónde está |
 |---|---|---|
 | 1 · Fundamentos | ✅ **completa** | `src/mai/`, `sql/`, `tests/` |
-| 2 · Autonomía e integración | 🚧 en curso | `src/mai/api/`, `src/mai/adaptadores/llm/` |
-| 3 · Complejidad y calidad | ⬜ pendiente | — |
+| 2 · Autonomía e integración | ⬜ pendiente | — |
+| 3 · Complejidad y calidad | 🚧 parcial | `.github/workflows/ci.yml` — solo la integración continua |
 | 4 · Arquitectura | 🚧 parcial | `docs/adr/` (3 de los ADR ya escritos) |
 | 5 · Estrategia | 🚧 parcial | `docs/metricas.md`, `docs/conjunto_referencia.csv` |
 
@@ -76,6 +76,19 @@ bandit -r src/
 
 **Ninguna prueba necesita red, credenciales ni los materiales originales.**
 Usan `tests/fixtures/tickets_muestra.csv`, un archivo curado a mano.
+
+### Integración continua
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre esas mismas tres
+órdenes en cada envío, sobre Python 3.11 —el mínimo declarado en
+`pyproject.toml`—, y añade un segundo trabajo que audita el repositorio:
+credenciales en los archivos versionados, credenciales **en el historial**
+(con `fetch-depth: 0`, porque un secreto borrado después sigue estando ahí) y
+rutas privadas que no deberían estar versionadas.
+
+El disparador no filtra por rama a propósito. El trabajo que debe fallar
+ocurre en ramas de etapa, no en `main`; un vigilante que solo escucha `main`
+no registra nada de lo que pasa donde de verdad se trabaja.
 
 ### Reproducir con los materiales originales
 
