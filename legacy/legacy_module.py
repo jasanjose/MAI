@@ -87,7 +87,11 @@ def contar_reaperturas(tickets):
         # El histórico escribe el estado como REABIERTO, Reabierto y
         # reabierto, y con espacios sobrantes. La comparación exacta
         # reconocía solo una de las tres formas.
-        estado = (t.get("estado") or "").strip().lower()
+        #
+        # `str(...)` porque normalizar no puede exigir un tipo que la
+        # comparación original no exigía: un valor que no sea texto debe
+        # dejar de contarse, no tumbar el informe.
+        estado = str(t.get("estado") or "").strip().lower()
         if estado == "reabierto":
             total += 1
     return total
