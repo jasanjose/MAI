@@ -81,7 +81,7 @@ def test_la_medicion_del_proveedor_viaja_con_el_resultado():
 
 
 def test_el_texto_del_usuario_nunca_entra_en_la_instruccion():
-    """Punto crítico 7 y estándar §5.3.
+    """Estándar §5.3: el texto del usuario nunca se concatena a un prompt.
 
     El puerto separa instrucción de entrada para que el texto de fuera viaje
     por un canal distinto. Esta prueba verifica que el clasificador respeta esa

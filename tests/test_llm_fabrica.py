@@ -63,7 +63,7 @@ def test_tolera_espacios_y_mayusculas_en_la_ruta():
 
 
 def test_cambiar_de_proveedor_es_cambiar_la_variable_y_nada_mas():
-    """El criterio del enunciado, verificado.
+    """El criterio de aceptación de `CLAUDE.md` §3, verificado.
 
     Se construyen dos cadenas distintas cambiando solo la cadena de texto de
     la ruta, y el mismo Clasificador —sin una línea distinta— trabaja con las

@@ -4,8 +4,9 @@ Este es el único sitio del sistema que sabe **qué proveedores existen**. El
 dominio conoce el puerto; los adaptadores conocen un protocolo; aquí se
 decide quién entra en la cadena y en qué orden, leyendo variables de entorno.
 
-Es la pieza que hace literal el criterio del enunciado: *«cambiar de modelo
-debe ser cambiar la variable de entorno, cero líneas de código»*.
+Es la pieza que hace literal el criterio de aceptación de `CLAUDE.md` §3:
+*«cambiar de proveedor debe ser cambiar la variable de entorno. Cero líneas
+de código.»*
 
     RUTA_CLASIFICACION=groq,dashscope
     RUTA_RAG=openai,dashscope

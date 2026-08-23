@@ -67,8 +67,8 @@ necesidad de análisis tabular real más allá de contar y agrupar.
 | `unittest` (estándar) | Cero dependencias | Más ceremonia: clases, `self.assertEqual`, sin parametrización nativa cómoda |
 
 **Decisión:** `pytest`. La parametrización se usa de inmediato —los doce
-meses en español son una sola prueba— y la legibilidad de las pruebas es
-parte de lo que se evalúa.
+meses en español son una sola prueba— y una prueba que se lee de un vistazo
+se mantiene; una que no, se borra en cuanto estorba.
 
 **Costo aceptado:** una dependencia de desarrollo. No entra al paquete
 publicado: vive en `[project.optional-dependencies].dev`.

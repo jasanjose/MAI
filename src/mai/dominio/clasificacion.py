@@ -135,9 +135,9 @@ class Clasificacion:
 class Clasificador:
     """Asigna categoría y prioridad a una solicitud en texto libre.
 
-    Depende de `ProveedorLLM`, no de un proveedor concreto. Es el punto
-    crítico 4 del enunciado, y la razón de que este archivo no tenga ni un
-    `import` de infraestructura.
+    Depende de `ProveedorLLM`, no de un proveedor concreto. Es la regla de
+    dependencias de `CLAUDE.md` §2, y la razón de que este archivo no tenga ni
+    un `import` de infraestructura.
     """
 
     def __init__(self, proveedor: ProveedorLLM) -> None:

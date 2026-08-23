@@ -221,7 +221,7 @@ coste de escritura sin beneficio de lectura.
 
 Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 
-1. **Las 12 categorías salieron de los datos, no del enunciado.** Las 58
+1. **Las 12 categorías salieron de los datos, no de una lista dada.** Las 58
    variantes colapsan en 12 al unir sinónimos, y R-01 declara 12. La
    coincidencia es la evidencia de que el catálogo es ese.
 2. **`fecha_cierre` vacía es un ticket abierto, no un dato sucio.** Son 1.299
@@ -339,9 +339,8 @@ Lo que **no** quedó hecho, y por qué.
 
 **Del proyecto:**
 
-- **No se recibió la credencial del proveedor de IA** que el enunciado
-  ofrece. Se escribió al canal habilitado. Se usan proveedores propios
-  (Groq, DashScope, OpenAI), lo cual el Anexo A admite siempre que se declare
-  y se explique el criterio; el criterio está en
+- **No se recibió la credencial del proveedor de IA prevista.** Se usan
+  proveedores propios (Groq, DashScope, OpenAI) o un modelo local, y el
+  criterio de la elección está declarado en
   [ADR-004](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md).
 - **Etapas 3 a 5 en curso.** Este README se actualiza al cerrar cada una.
