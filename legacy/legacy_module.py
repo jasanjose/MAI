@@ -59,7 +59,7 @@ def filtrar_por_periodo(tickets, inicio, fin):
         fc = parsear_fecha(t.get("fecha_creacion"))
         if fc is None:
             continue
-        if fc > inicio and fc < fin:
+        if fc >= inicio and fc <= fin:
             seleccionados.append(t)
     return seleccionados
 
