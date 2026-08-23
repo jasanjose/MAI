@@ -10,7 +10,7 @@ traducen a comportamiento verificable.
 
 from datetime import date
 
-from legacy_module import filtrar_por_periodo, informe_mensual
+from legacy_module import filtrar_por_periodo, informe_mensual, resumir_por_area
 
 
 def _ticket(identificador: str, fecha_creacion: str) -> dict[str, str]:
@@ -84,3 +84,86 @@ def test_el_informe_mensual_cuenta_los_tickets_de_los_extremos():
     informe = informe_mensual(tickets, 2025, 3)
 
     assert informe["total"] == 3
+
+
+# ---------------------------------------------------------------------------
+# S2 · «Al generar varios resúmenes seguidos, el segundo en adelante sale
+#       inflado»
+#
+# Aviso sobre cómo están escritas estas pruebas, porque la forma obvia NO
+# detecta el defecto:
+#
+#     primero = resumir_por_area(tickets)
+#     segundo = resumir_por_area(tickets)
+#     assert segundo == primero        # <- pasa aunque el defecto exista
+#
+# Pasa porque `primero is segundo`: con el argumento mutable, las dos
+# llamadas devuelven el MISMO objeto, y esa comparación es un objeto contra
+# sí mismo. Por eso aquí se fotografía el resultado con `dict(...)` antes de
+# volver a llamar.
+# ---------------------------------------------------------------------------
+
+TICKETS_DE_TRES_AREAS = [
+    {"area": "TI"},
+    {"area": "TI"},
+    {"area": "Gestión Humana"},
+]
+
+
+def test_cuenta_los_tickets_por_area():
+    """Camino normal.
+
+    Se pasa un acumulador explícito a propósito. El acumulador por defecto es
+    compartido por todo el proceso, así que ya viene contaminado por cualquier
+    prueba anterior que haya llamado a `informe_mensual`. Pasarlo explícito
+    hace que esta prueba mida la lógica de conteo y no el orden de ejecución.
+    """
+    resultado = resumir_por_area(TICKETS_DE_TRES_AREAS, {})
+
+    assert resultado == {"TI": 2, "Gestión Humana": 1}
+
+
+def test_dos_resumenes_seguidos_no_inflan_las_cifras():
+    """El síntoma que reportó el área, en su forma más directa."""
+    primero = dict(resumir_por_area(TICKETS_DE_TRES_AREAS))
+    segundo = dict(resumir_por_area(TICKETS_DE_TRES_AREAS))
+
+    assert segundo == primero
+
+
+def test_cada_llamada_devuelve_un_diccionario_propio():
+    """La causa, aislada: dos llamadas no pueden compartir el mismo objeto."""
+    primero = resumir_por_area(TICKETS_DE_TRES_AREAS)
+    segundo = resumir_por_area(TICKETS_DE_TRES_AREAS)
+
+    assert primero is not segundo
+
+
+def test_un_resumen_ya_entregado_no_cambia_al_generar_el_siguiente():
+    """La consecuencia más difícil de rastrear en producción.
+
+    Quien recibió el primer resumen no volvió a tocarlo, pero sus cifras
+    cambian solas cuando alguien más pide otro. Un informe ya impreso y el
+    mismo informe consultado después no coinciden, y nada en el código
+    sugiere dónde mirar.
+    """
+    entregado = resumir_por_area(TICKETS_DE_TRES_AREAS)
+    total_al_entregarlo = sum(entregado.values())
+
+    resumir_por_area(TICKETS_DE_TRES_AREAS)
+
+    assert sum(entregado.values()) == total_al_entregarlo
+
+
+def test_el_acumulador_explicito_sigue_acumulando():
+    """El parámetro tiene un uso legítimo y el arreglo no debe quitarlo.
+
+    Sumar dos lotes sobre el mismo acumulador es para lo que existe. Lo que
+    está mal no es el parámetro: es su valor por defecto.
+    """
+    acumulador = {}
+
+    resumir_por_area([{"area": "TI"}], acumulador)
+    resumir_por_area([{"area": "TI"}], acumulador)
+
+    assert acumulador == {"TI": 2}
