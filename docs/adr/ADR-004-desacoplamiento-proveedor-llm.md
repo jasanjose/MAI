@@ -17,10 +17,10 @@ política sobre los fragmentos recuperados.
 
 Tres hechos condicionan el diseño:
 
-**1 · No hay una credencial única y estable.** El enunciado ofrece acceso a
-un proveedor, pero no llegó por el canal habilitado. Se usan proveedores
-propios, y el Anexo A admite explícitamente esa ruta siempre que se declare
-y se explique el criterio.
+**1 · No hay una credencial única y estable.** El acceso al proveedor
+previsto no llegó. Se usan proveedores propios, incluida la posibilidad de un
+modelo local, y la elección se declara con su criterio en este mismo
+documento.
 
 **2 · Las dos tareas tienen restricciones opuestas.** R-01 son 3.000
 clasificaciones diarias en lote, donde el error se corrige en menos de un
@@ -31,8 +31,9 @@ genera reclamación formal ante Talento Humano: manda la fidelidad.
 **3 · La integración continua no puede depender de una credencial.** Las
 pruebas tienen que correr sin red y de forma reproducible.
 
-Y sobre todo esto pesa el criterio del enunciado: *«Si no puedes cambiar de
-modelo sin reescribir, ese criterio no se supera.»*
+Y sobre todo esto pesa el criterio de aceptación que fija `CLAUDE.md` §3:
+*«cambiar de proveedor debe ser cambiar la variable de entorno. Cero líneas
+de código. Si hay que tocar el dominio, el diseño está mal.»*
 
 ---
 
@@ -43,15 +44,15 @@ modelo sin reescribir, ese criterio no se supera.»*
 | Opción | A favor | En contra |
 |---|---|---|
 | **Puerto en el dominio + adaptadores** | El dominio depende de una interfaz, nunca de un proveedor. Cambiar de modelo es cambiar una variable de entorno. Permite un adaptador falso determinista para CI | Una capa de indirección más que hay que sostener y explicar |
-| Llamada directa al SDK del proveedor | Menos código, menos capas | Acopla la lógica de negocio al proveedor. Es literalmente lo que el punto crítico 4 declara como no superado. Y hace imposible correr las pruebas sin credencial |
-| Un enrutador tipo `litellm` o similar | Resuelve la conmutación entre proveedores sin escribirla | Dependencia grande para un problema pequeño, y la lógica de conmutación —que es justo lo que se evalúa— quedaría dentro de una caja que no escribí y tendría que defender igual |
+| Llamada directa al SDK del proveedor | Menos código, menos capas | Acopla la lógica de negocio al proveedor: cambiar de modelo obliga a tocar el dominio. Y hace imposible correr las pruebas sin credencial |
+| Un enrutador tipo `litellm` o similar | Resuelve la conmutación entre proveedores sin escribirla | Dependencia grande para un problema pequeño. La lógica de conmutación —cadena, degradado, medición— es el núcleo de esta decisión, y quedaría dentro de una caja que hay que entender igual para operarla |
 
 ### B · Cuántos adaptadores concretos
 
 | Opción | A favor | En contra |
 |---|---|---|
 | **Uno solo, `openai_compatible`** | OpenAI, Groq, DashScope, OpenRouter y Ollama hablan todos Chat Completions: cambian `base_url`, `api_key` y `model`. Cinco proveedores con un archivo y una sola ruta de error que probar | Deja fuera a los que no siguen esa forma, como Anthropic |
-| Uno por proveedor | Más fiel a las particularidades de cada API | Cinco archivos casi idénticos. Cinco veces la misma lógica de timeout, reintento y medición — y cinco superficies distintas que defender en la sustentación |
+| Uno por proveedor | Más fiel a las particularidades de cada API | Cinco archivos casi idénticos. Cinco veces la misma lógica de timeout, reintento y medición — y cinco superficies distintas que mantener y probar |
 
 ### C · Qué hacer cuando el proveedor primario falla
 
@@ -107,7 +108,7 @@ no se hereda de ningún framework:
 | Tarea | Degradado | Por qué |
 |---|---|---|
 | Clasificar | Reglas por palabras clave sobre el catálogo cerrado, con `origen: "degradado"` y `confianza: "baja"` | El error cuesta un minuto de un analista. Una clasificación aproximada y marcada es mejor que ninguna |
-| Responder política | **Abstención y escalamiento a persona.** Nunca reglas | R-02 dice que un error genera reclamación formal. Responder por reglas cuando no hay proveedor es exactamente inventar sin evidencia, que es lo que el punto crítico 6 prohíbe |
+| Responder política | **Abstención y escalamiento a persona.** Nunca reglas | R-02 dice que un error genera reclamación formal. Responder por reglas cuando no hay proveedor es inventar sin evidencia, que es justo lo que `CLAUDE.md` §8 prohíbe |
 
 **6 · Todo adaptador implementa, sin excepción:** tiempo de espera explícito,
 reintento con retroceso exponencial respetando `Retry-After`, y reporte de

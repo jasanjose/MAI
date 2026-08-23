@@ -3,7 +3,12 @@ name = "mai"
 version = "0.1.0"
 description = "MAI · Mesa de Ayuda Inteligente"
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.27"]
+dependencies = [
+    "httpx>=0.27",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.5",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6", "bandit>=1.7"]
@@ -36,3 +41,7 @@ per-file-ignores = { "tests/*" = ["S101", "S105", "S106", "S107"] }
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-q"
+# El modulo heredado se corrige, no se adopta: vive en legacy/ y no es parte
+# del paquete mai. Esta linea le da a pytest la ruta para importarlo sin
+# convertirlo en dependencia de src/.
+pythonpath = ["legacy"]

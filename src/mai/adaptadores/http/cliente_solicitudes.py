@@ -19,19 +19,19 @@ no un 404.
 from __future__ import annotations
 
 import logging
-import random
 import time
 from dataclasses import dataclass
 from typing import Any, Callable
 
 import httpx
 
+from mai.adaptadores.reintento import ESPERA_MAXIMA_S, calcular_espera, leer_retry_after
+
 logger = logging.getLogger(__name__)
 
 TIEMPO_ESPERA_S = 10.0
 REINTENTOS = 3
 ESPERA_BASE_S = 0.5
-ESPERA_MAXIMA_S = 20.0
 
 # Un 500 o un 429 pueden resolverse solos; un 401 o un 404 no. Reintentar un
 # error del cliente solo gasta tiempo y cuota para obtener el mismo resultado.
@@ -241,26 +241,21 @@ class ClienteSolicitudes:
     def _calcular_espera(self, intento: int, respuesta: httpx.Response | None) -> float:
         """Retroceso exponencial, con `Retry-After` por encima si el servicio lo indica.
 
-        Si el servicio dice cuánto esperar, se le hace caso: sabe más que
-        nosotros sobre su propia recuperación.
+        Lo único propio de este adaptador es saber DÓNDE viene esa indicación:
+        la cabecera `Retry-After` de una respuesta 429. La matemática del
+        retroceso es común con el adaptador del proveedor de lenguaje y vive
+        en `mai.adaptadores.reintento`.
         """
+        indicada = None
         if respuesta is not None and respuesta.status_code == 429:
-            indicado = respuesta.headers.get("Retry-After")
-            if indicado and indicado.strip().isdigit():
-                return min(float(indicado), ESPERA_MAXIMA_S)
+            indicada = leer_retry_after(respuesta.headers.get("Retry-After"))
 
-        espera = self._espera_base_s * (2 ** (intento - 1))
-        # Dispersión: si varios clientes fallan a la vez, sin esto reintentarían
-        # todos en el mismo instante y volverían a tumbar el servicio al
-        # recuperarse. Es el problema del rebaño atronador.
-        #
-        # `bandit` marca esta línea como B311 (generador pseudoaleatorio no apto
-        # para criptografía) y hace bien en marcarla. Aquí no aplica: el número
-        # solo separa reintentos en el tiempo. Nadie obtiene ventaja
-        # prediciéndolo, y no protege ningún secreto. La excepción se documenta
-        # en el punto de uso, no en un archivo de configuración lejano.
-        espera += random.uniform(0, self._espera_base_s)  # noqa: S311  # nosec B311
-        return min(espera, ESPERA_MAXIMA_S)
+        return calcular_espera(
+            intento,
+            self._espera_base_s,
+            espera_indicada_s=indicada,
+            espera_maxima_s=ESPERA_MAXIMA_S,
+        )
 
     def _leer_cuerpo(self, respuesta: httpx.Response, operacion: str) -> Any:
         try:
