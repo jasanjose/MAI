@@ -4,11 +4,15 @@ El entorno se pasa como diccionario: ninguna prueba toca `os.environ` ni
 depende de cómo esté configurada la máquina donde corre.
 """
 
+import re
+from pathlib import Path
+
 import pytest
 
 from mai.adaptadores.llm.compatible import AdaptadorCompatible
 from mai.adaptadores.llm.enrutador import EnrutadorLLM
 from mai.adaptadores.llm.fabrica import (
+    PROVEEDORES_COMPATIBLES,
     ConfiguracionInvalida,
     construir_cadena,
     construir_para_clasificacion,
@@ -167,3 +171,37 @@ def test_construye_el_adaptador_falso_para_la_ruta_falsa():
     cadena = construir_cadena("falso", entorno={})
 
     assert isinstance(cadena._proveedores[0], AdaptadorFalso)
+
+
+# ── Coherencia entre el código y la configuración ───────────────────────────
+
+
+def test_todo_proveedor_que_el_codigo_acepta_esta_documentado_en_env_example():
+    """Un proveedor utilizable que la configuración no menciona es invisible.
+
+    Quien despliega el sistema lee `.env.example`, no el diccionario de la
+    fábrica. Sin esta prueba, añadir un proveedor al código y olvidar
+    documentarlo no rompe nada — y nadie se entera hasta que hace falta.
+    """
+    ejemplo = (Path(__file__).parent.parent / ".env.example").read_text(encoding="utf-8")
+    documentados = {p.lower() for p in re.findall(r"^([A-Z]+)_BASE_URL", ejemplo, re.M)}
+
+    assert set(PROVEEDORES_COMPATIBLES) == documentados
+
+
+def test_env_example_no_trae_ninguna_credencial_con_valor():
+    """Los nombres se versionan; los valores nunca.
+
+    La excepción es OLLAMA_API_KEY, que es un modelo local sin autenticación:
+    la variable existe porque el adaptador es el mismo, y su valor es un
+    relleno, no un secreto.
+    """
+    ejemplo = (Path(__file__).parent.parent / ".env.example").read_text(encoding="utf-8")
+
+    for linea in ejemplo.splitlines():
+        if "_API_KEY=" not in linea or linea.strip().startswith("#"):
+            continue
+        nombre, _, valor = linea.partition("=")
+        if nombre == "OLLAMA_API_KEY":
+            continue
+        assert valor.strip() == "", f"{nombre} trae un valor en .env.example"
