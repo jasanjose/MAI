@@ -10,6 +10,23 @@ El día que la persistencia pase a SQL, esa simetría se rompe y esta clase
 deja de servir: ahí la indivisibilidad la debe dar una restricción
 `UNIQUE(clave)` en la tabla, no un cerrojo de proceso, porque con varios
 procesos sirviendo la API un cerrojo local no protege nada.
+
+## Dos límites declarados, medidos
+
+**No hay caducidad.** Una clave completada se conserva indefinidamente. Se
+midió: 10.000 claves únicas dejan 10.000 entradas retenidas. Un cliente que
+genere una clave nueva por petición hace crecer la memoria sin techo. Los
+almacenes de idempotencia reales caducan las claves —24 horas es lo
+habitual—, porque pasado ese plazo ningún reintento razonable va a llegar.
+No se implementa aquí: exige una tarea de limpieza o marcas de tiempo por
+entrada, y con almacenamiento en memoria el proceso se reinicia mucho antes
+de que el crecimiento importe. Con persistencia real deja de ser aceptable.
+
+**Una reserva sin terminar puede quedarse.** `liberar` la suelta cuando la
+operación falla, pero si el proceso muere entre reservar y completar, la
+entrada queda en «en curso» y los reintentos de esa clave reciben 409 para
+siempre. Aquí no llega a ocurrir —si el proceso muere, el diccionario muere
+con él—, pero es el mismo problema que la caducidad y se resuelve igual.
 """
 
 from __future__ import annotations
