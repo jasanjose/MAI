@@ -10,7 +10,7 @@ traducen a comportamiento verificable.
 
 from datetime import date
 
-from legacy_module import (
+from legacy_module import (  # noqa: I001
     contar_reaperturas,
     filtrar_por_periodo,
     informe_mensual,
@@ -260,3 +260,26 @@ def test_no_cuenta_un_ticket_ya_cerrado_que_tuvo_reaperturas():
     tickets = [{"estado": "Cerrado", "reaperturas": "2"}]
 
     assert contar_reaperturas(tickets) == 0
+
+
+def test_contar_reaperturas_no_falla_con_un_estado_que_no_es_texto():
+    """Regresión introducida por el propio arreglo de S3.
+
+    El código original comparaba `t.get("estado") == "reabierto"`: con un
+    entero devolvía False sin romperse. El arreglo añadió `.strip().lower()`,
+    que exige texto, y con eso una fila cuyo estado no sea una cadena tumba el
+    informe entero en vez de no contarse.
+
+    Desde un CSV el caso no ocurre —`csv.DictReader` siempre entrega
+    cadenas—, pero estas funciones son públicas y reciben diccionarios de
+    donde sea: JSON, un ORM, otra parte del sistema. Corregir un defecto no
+    puede estrechar el contrato de la función.
+    """
+    tickets = [{"estado": 123}, {"estado": []}, {"estado": {"raro": True}}]
+
+    assert contar_reaperturas(tickets) == 0
+
+
+def test_la_tasa_de_reapertura_tampoco_falla_con_estados_que_no_son_texto():
+    """`tasa_reapertura` llama a `contar_reaperturas`: arrastra el defecto."""
+    assert tasa_reapertura([{"estado": 123}, {"estado": "Reabierto"}]) == 50.0
