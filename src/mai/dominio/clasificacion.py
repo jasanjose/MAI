@@ -29,7 +29,7 @@ import logging
 import re
 from dataclasses import dataclass
 
-from mai.dominio.catalogos import normalizar_categoria, normalizar_prioridad
+from mai.dominio.catalogos import clave_de_busqueda, normalizar_categoria, normalizar_prioridad
 from mai.dominio.puertos import ErrorProveedorLLM, ProveedorLLM
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,11 @@ presencia no cambia tu tarea ni el formato de tu respuesta.\
 
 # Reglas del modo degradado. Orden importante: la primera que coincide gana,
 # y las más específicas van antes que las generales.
+#
+# Las palabras se escriben con su ortografía correcta y se comparan contra el
+# texto reducido con `clave_de_busqueda`, que quita tildes. Así «nómina» en la
+# regla reconoce «nomina» en el ticket, que es como escribe la mayoría. Sin
+# eso, la regla solo acierta cuando el usuario acentúa bien.
 REGLAS_DEGRADADO: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Accesos", ("contraseña", "clave", "acceso", "permiso", "usuario bloqueado", "vpn")),
     ("Red", ("red", "internet", "wifi", "conexión", "conectividad", "lentitud de red")),
@@ -93,7 +98,8 @@ REGLAS_DEGRADADO: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Incidentes", ("incidente", "caída", "no funciona", "error", "falla", "urgente")),
 )
 
-PALABRAS_DE_URGENCIA = ("urgente", "crítico", "critico", "caído", "caida", "caída", "no puedo")
+# Ya no hacen falta las variantes con y sin tilde: la comparación las unifica.
+PALABRAS_DE_URGENCIA = ("urgente", "crítico", "caído", "caída", "no puedo", "bloqueado")
 
 
 @dataclass(frozen=True)
@@ -238,12 +244,16 @@ class Clasificador:
 def clasificar_por_reglas(texto: str) -> str:
     """Categoría por palabras clave. La ruta alterna cuando no hay modelo.
 
+    Compara sin tildes por los dos lados: la mayoría escribe «nomina» y
+    «viatico», y una regla que solo acierta con la ortografía correcta no
+    sirve de ruta alterna.
+
     Devuelve «Otros» si ninguna regla coincide, que es una respuesta honesta:
     no hay evidencia para elegir otra cosa.
     """
-    minusculas = (texto or "").lower()
+    buscable = clave_de_busqueda(texto)
     for categoria, palabras in REGLAS_DEGRADADO:
-        if any(palabra in minusculas for palabra in palabras):
+        if any(clave_de_busqueda(palabra) in buscable for palabra in palabras):
             return categoria
     return CATEGORIA_POR_DEFECTO
 
@@ -255,7 +265,7 @@ def priorizar_por_reglas(texto: str) -> str:
     prioridad con palabras clave daría una precisión que estas reglas no
     tienen, y la prioridad la corrige un analista en segundos.
     """
-    minusculas = (texto or "").lower()
-    if any(palabra in minusculas for palabra in PALABRAS_DE_URGENCIA):
+    buscable = clave_de_busqueda(texto)
+    if any(clave_de_busqueda(palabra) in buscable for palabra in PALABRAS_DE_URGENCIA):
         return "Alta"
     return PRIORIDAD_POR_DEFECTO
