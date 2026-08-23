@@ -10,7 +10,13 @@ traducen a comportamiento verificable.
 
 from datetime import date
 
-from legacy_module import filtrar_por_periodo, informe_mensual, resumir_por_area
+from legacy_module import (
+    contar_reaperturas,
+    filtrar_por_periodo,
+    informe_mensual,
+    resumir_por_area,
+    tasa_reapertura,
+)
 
 
 def _ticket(identificador: str, fecha_creacion: str) -> dict[str, str]:
@@ -167,3 +173,90 @@ def test_el_acumulador_explicito_sigue_acumulando():
     resumir_por_area([{"area": "TI"}], acumulador)
 
     assert acumulador == {"TI": 2}
+
+
+# ---------------------------------------------------------------------------
+# S3 · «El indicador de reaperturas siempre da por debajo de lo que ve la
+#       mesa de ayuda en pantalla»
+#
+# El histórico trae el estado escrito de tres formas: REABIERTO (197 filas),
+# Reabierto (166) y reabierto (165). La comparación exacta reconoce solo la
+# tercera: cuenta 165 de 528, el 31 %.
+# ---------------------------------------------------------------------------
+
+
+def test_cuenta_el_ticket_reabierto_en_minuscula():
+    """Camino normal: la única forma que el código reconocía."""
+    assert contar_reaperturas([{"estado": "reabierto"}]) == 1
+
+
+def test_cuenta_el_ticket_reabierto_en_mayuscula():
+    """`REABIERTO` son 197 filas del histórico, casi el 40 % de los reabiertos."""
+    assert contar_reaperturas([{"estado": "REABIERTO"}]) == 1
+
+
+def test_cuenta_el_ticket_reabierto_capitalizado():
+    """`Reabierto` son otras 166 filas."""
+    assert contar_reaperturas([{"estado": "Reabierto"}]) == 1
+
+
+def test_cuenta_el_ticket_reabierto_con_espacios_sobrantes():
+    """El histórico trae espacios de más en varios campos de texto."""
+    assert contar_reaperturas([{"estado": "  Reabierto  "}]) == 1
+
+
+def test_no_cuenta_los_estados_que_no_son_reapertura():
+    """El indicador sigue discriminando: ampliar no es contar de más."""
+    tickets = [
+        {"estado": "Abierto"},
+        {"estado": "CERRADO"},
+        {"estado": "En proceso"},
+        {"estado": "Escalado"},
+    ]
+
+    assert contar_reaperturas(tickets) == 0
+
+
+def test_no_falla_con_el_estado_ausente_o_vacio():
+    """Caso de borde: el histórico tiene campos vacíos y el módulo los recibe."""
+    tickets = [{}, {"estado": None}, {"estado": ""}, {"estado": "   "}]
+
+    assert contar_reaperturas(tickets) == 0
+
+
+def test_la_tasa_de_reapertura_no_divide_por_cero():
+    """Caso de borde: conjunto vacío. Devuelve 0.0, no una excepción."""
+    assert tasa_reapertura([]) == 0.0
+
+
+def test_la_tasa_de_reapertura_refleja_el_conteo_corregido():
+    """Dos de cuatro reabiertos, escritos de dos formas distintas: 50 %."""
+    tickets = [
+        {"estado": "REABIERTO"},
+        {"estado": "reabierto"},
+        {"estado": "Cerrado"},
+        {"estado": "Abierto"},
+    ]
+
+    assert tasa_reapertura(tickets) == 50.0
+
+
+def test_no_cuenta_un_ticket_ya_cerrado_que_tuvo_reaperturas():
+    """LIMITE DECLARADO, no un descuido. Fija el comportamiento actual.
+
+    `contar_reaperturas` mira el estado ACTUAL. Un ticket que se reabrió dos
+    veces y después se cerró tiene `reaperturas = 2` y `estado = Cerrado`, y
+    no se cuenta — aunque el docstring diga «fueron reabiertos al menos una
+    vez», que en sentido literal lo incluiría.
+
+    En el histórico son 58 tickets de los 559 con contador mayor que cero.
+
+    No se corrige aquí porque no es un defecto de código sino una pregunta
+    para el negocio: ¿el indicador mide «cuántos están reabiertos hoy» o
+    «cuántos se reabrieron alguna vez»? Son dos indicadores distintos y el
+    módulo no dice cuál pidió el área. Esta prueba deja el comportamiento
+    fijado para que cambiarlo sea una decisión y no un efecto secundario.
+    """
+    tickets = [{"estado": "Cerrado", "reaperturas": "2"}]
+
+    assert contar_reaperturas(tickets) == 0
