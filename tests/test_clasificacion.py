@@ -286,3 +286,36 @@ def test_las_reglas_dejan_prioridad_media_por_defecto():
     palabras clave daría una precisión que estas reglas no tienen."""
     assert priorizar_por_reglas("Solicito una cotización") == "Media"
     assert priorizar_por_reglas("") == "Media"
+
+
+# ── Defecto encontrado al ejecutar la API, no en las pruebas ────────────────
+
+
+@pytest.mark.parametrize(
+    ("texto", "esperada"),
+    [
+        # El caso observado tal cual: no trae ninguna otra palabra clave que
+        # lo salve, así que cae en «Otros».
+        ("No puedo entrar al sistema de nomina", "Nómina"),
+        ("Reembolso de viatico del viaje", "Viáticos"),
+        ("Solicito capacitacion", "Capacitación"),
+        ("Falla de conexion", "Red"),
+    ],
+)
+def test_las_reglas_reconocen_el_texto_escrito_sin_tildes(texto, esperada):
+    """Se encontró levantando la API, no con las pruebas.
+
+    Un ticket real decía «no puedo entrar al sistema de nomina» —sin tilde,
+    como escribe la mayoría— y las reglas devolvieron «Otros» porque comparan
+    contra «nómina» con tilde.
+
+    No es un caso rebuscado: en el histórico entregado conviven las dos
+    escrituras, y `catalogos.py` ya resolvió lo mismo para las categorías con
+    `clave_de_busqueda`. Las reglas del modo degradado se lo saltaron.
+    """
+    assert clasificar_por_reglas(texto) == esperada
+
+
+def test_la_prioridad_reconoce_las_palabras_de_urgencia_sin_tildes():
+    assert priorizar_por_reglas("Esto es critico") == "Alta"
+    assert priorizar_por_reglas("El servicio esta caido") == "Alta"
