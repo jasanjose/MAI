@@ -20,9 +20,9 @@ Es una **secuencia lineal con una bifurcación condicional**. No tiene
 ciclos, ni ramas paralelas que después se unan, ni pausas a la espera de
 intervención humana dentro de la misma ejecución.
 
-El enunciado admite tres caminos y pide justificar el elegido: *«Puedes usar
-n8n, un orquestador de agentes o implementación propia; justifica la
-elección.»* No hay una respuesta correcta preasignada: se evalúa el criterio.
+Los tres caminos disponibles son un motor visual tipo n8n, un framework de
+agentes, o implementación propia. Ninguno es incorrecto de partida: lo que
+decide es qué forma tiene el flujo que hay que orquestar.
 
 Hay una restricción que pesa sobre todo lo demás: **la autoría es
 eliminatoria.** Tres fragmentos del código se explican línea por línea y se

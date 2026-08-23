@@ -67,8 +67,8 @@ necesidad de análisis tabular real más allá de contar y agrupar.
 | `unittest` (estándar) | Cero dependencias | Más ceremonia: clases, `self.assertEqual`, sin parametrización nativa cómoda |
 
 **Decisión:** `pytest`. La parametrización se usa de inmediato —los doce
-meses en español son una sola prueba— y la legibilidad de las pruebas es
-parte de lo que se evalúa.
+meses en español son una sola prueba— y una prueba que se lee de un vistazo
+se mantiene; una que no, se borra en cuanto estorba.
 
 **Costo aceptado:** una dependencia de desarrollo. No entra al paquete
 publicado: vive en `[project.optional-dependencies].dev`.
@@ -90,6 +90,63 @@ porque `bandit` sobre el diff a revisar produce evidencia citable que `ruff`
 solo no da.
 
 **No sustituyen la revisión humana: la enfocan.**
+
+---
+
+## D-004 · API propia → `fastapi` + `uvicorn` + `pydantic`
+
+**Qué problema resuelve.** La etapa 2 pide una API REST con tres recursos,
+validación de entrada, códigos de estado correctos, una forma uniforme de
+error y **el contrato de la API como entregable**.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **`fastapi` + `uvicorn` + `pydantic`** | Genera el contrato OpenAPI **desde el propio código**. Validación declarativa con errores estructurados. `uvicorn` es el servidor; `pydantic` ya viene como dependencia de `fastapi` y se declara explícita porque se usa directamente | Tres dependencias. Los errores de validación traen la forma de `pydantic` y hay que traducirlos a la nuestra: eso es trabajo real, no gratis |
+| `flask` | Una sola dependencia, muy conocido | Validación a mano y sin contrato generado. Acabaría siendo `flask` más una librería de validación: dos dependencias y más código propio que mantener |
+| `http.server` (estándar) | Cero dependencias | Enrutado, análisis del cuerpo, validación y errores JSON escritos a mano. No cabe en «treinta líneas comprensibles», y ese servidor no está pensado para servir nada real |
+
+**Por qué esta.** El argumento decisivo no es la comodidad sino la
+**consistencia entre el contrato y la implementación**. Un contrato escrito a
+mano en un Markdown queda obsoleto en el primer cambio de la API y nadie se
+entera hasta que un consumidor falla. Generado desde el código, no puede
+desviarse.
+
+`uvicorn` entra porque una aplicación ASGI necesita un servidor que la
+ejecute; no aporta funcionalidad propia al código.
+
+**Qué costo se acepta.**
+
+- Tres dependencias de ejecución donde antes había una.
+- `pydantic` valida y produce sus propios errores. Traducirlos a
+  `{codigo, mensaje, detalle, id_traza}` es código que hay que escribir y
+  probar; sin esa traducción la API tendría dos formas de error distintas.
+- El proyecto queda atado al ecosistema ASGI. Migrar a otro marco exigiría
+  reescribir la capa `api/`, aunque no el dominio.
+
+**Qué NO se adopta.** No entra ORM. Las solicitudes viven en memoria detrás
+de un puerto (ver D-005): cambiar a SQL será un adaptador nuevo, no una
+reescritura.
+
+---
+
+## D-005 · Persistencia de solicitudes → puerto + adaptador en memoria
+
+**Qué problema resuelve.** La API necesita guardar y consultar solicitudes.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **Puerto en el dominio + adaptador en memoria** | Cero dependencias. Las pruebas corren sin base de datos y sin red. El puerto hace que pasar a SQL sea un adaptador nuevo, no una reescritura | **Los datos se pierden al reiniciar.** No sirve para producción y hay que declararlo |
+| `sqlite3` (estándar) | Persiste, cero dependencias, consultas parametrizadas reales | El esquema entregado es de sabor MySQL y adaptarlo es trabajo. La evidencia de SQL parametrizado ya está en `sql/consultas.sql` |
+| MySQL con conector | Coincide con el esquema entregado | Necesita un servidor corriendo: rompe la regla de que las pruebas no dependan de red ni de infraestructura |
+
+**Por qué esta.** Es el mismo argumento que se aplicó al proveedor de
+lenguaje: el dominio depende de una abstracción y la implementación concreta
+se elige al componer. Lo que se gana no es simplicidad, es **poder cambiar de
+almacenamiento sin tocar la lógica**.
+
+**Qué costo se acepta.** Los datos no sobreviven a un reinicio. Se declara en
+el README como límite, no se disimula. Con más tiempo, el siguiente adaptador
+es `sqlite3` sobre el esquema entregado.
 
 ---
 
@@ -119,5 +176,5 @@ esconden los defectos.
 
 ### P-002 · Extracción de texto de PDF *(etapa 3)*
 ### P-003 · Modelo de embeddings y base vectorial *(etapa 3 — va a ADR-001)*
-### P-004 · API propia *(etapa 2)*
+### P-004 · API propia *(etapa 2)* — **resuelta, ver D-004**
 ### P-005 · Modelo clásico y matriz de confusión *(etapa 5)*

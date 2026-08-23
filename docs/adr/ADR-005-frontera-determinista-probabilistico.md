@@ -59,7 +59,7 @@ No siempre. Depende de qué cuesta equivocarse:
 > **¿El error sería detectable y barato? → puede entrar el modelo.
 > ¿Sería silencioso o caro? → cuarentena o abstención.**
 
-Este criterio no es una preferencia: sale del enunciado del negocio.
+Este criterio no es una preferencia: sale de los requerimientos del negocio.
 R-01 dice que una clasificación errada se corrige en menos de un minuto y no
 afecta al usuario. R-02 dice que una respuesta equivocada sobre montos o
 plazos genera reclamación formal. Son costos de error de órdenes distintos y

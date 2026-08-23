@@ -12,8 +12,8 @@ escala a una persona lo que no puede resolver.
 | Etapa | Estado | Dónde está |
 |---|---|---|
 | 1 · Fundamentos | ✅ **completa** | `src/mai/`, `sql/`, `tests/` |
-| 2 · Autonomía e integración | 🚧 en curso | `src/mai/api/`, `src/mai/adaptadores/llm/` |
-| 3 · Complejidad y calidad | ⬜ pendiente | — |
+| 2 · Autonomía e integración | ✅ **completa** | `src/mai/api/`, `src/mai/adaptadores/llm/`, `legacy/` |
+| 3 · Complejidad y calidad | 🚧 parcial | `.github/workflows/ci.yml` — solo la integración continua |
 | 4 · Arquitectura | 🚧 parcial | `docs/adr/` (3 de los ADR ya escritos) |
 | 5 · Estrategia | 🚧 parcial | `docs/metricas.md`, `docs/conjunto_referencia.csv` |
 
@@ -66,16 +66,41 @@ a mano:
 
 El umbral se ajusta con `--umbral-cuarentena`.
 
+### Levantar la API
+
+```bash
+python -m mai.api                       # 127.0.0.1:8000
+uvicorn mai.api.main:app --port 8000    # equivalente
+```
+
+Sin variables de entorno funciona: las dos rutas de proveedor caen en `falso`,
+determinista y sin red. Qué resuelve, para quién y qué **no** hace está en
+[`docs/api.md`](docs/api.md); el contrato técnico se genera del código y se
+publica en `/openapi.json`, con navegador en `/docs`.
+
 ### Pruebas
 
 ```bash
-pytest          # 126 pruebas, sin red y sin credenciales
+pytest          # 367 pruebas, sin red y sin credenciales
 ruff check .
 bandit -r src/
 ```
 
 **Ninguna prueba necesita red, credenciales ni los materiales originales.**
 Usan `tests/fixtures/tickets_muestra.csv`, un archivo curado a mano.
+
+### Integración continua
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre esas mismas tres
+órdenes en cada envío, sobre Python 3.11 —el mínimo declarado en
+`pyproject.toml`—, y añade un segundo trabajo que audita el repositorio:
+credenciales en los archivos versionados, credenciales **en el historial**
+(con `fetch-depth: 0`, porque un secreto borrado después sigue estando ahí) y
+rutas privadas que no deberían estar versionadas.
+
+El disparador no filtra por rama a propósito. El trabajo que debe fallar
+ocurre en ramas de etapa, no en `main`; un vigilante que solo escucha `main`
+no registra nada de lo que pasa donde de verdad se trabaja.
 
 ### Reproducir con los materiales originales
 
@@ -142,6 +167,44 @@ El servicio falla a propósito: 12 % de 500 y 5 % de 429. Verificado contra
 Ninguna excepción de la librería llega al usuario: se traducen a errores del
 dominio con mensaje legible.
 
+### Módulo de IA desacoplado
+
+La lógica de negocio depende de `ProveedorLLM`
+([`src/mai/dominio/puertos.py`](src/mai/dominio/puertos.py)), nunca de un
+proveedor concreto. Cambiar de modelo es cambiar `RUTA_CLASIFICACION` o
+`RUTA_RAG`; no hay una línea de dominio que tocar.
+
+| Adaptador | Para qué |
+|---|---|
+| `falso` | Determinista, sin red. Es lo que hace que las 367 pruebas corran en integración continua sin credenciales |
+| `compatible` | Un archivo para **cinco proveedores** — Groq, DashScope, OpenAI, OpenRouter y Ollama hablan todos Chat Completions |
+| `enrutador` | Cadena con reserva. **Implementa el mismo puerto**, así que el dominio no distingue un proveedor de una cadena de cinco |
+
+Al agotarse la cadena **no responde un adaptador falso**: entra el modo
+degradado, que es distinto según la tarea. Clasificar cae a reglas por
+palabras clave marcadas `confianza: "baja"`; responder una política se
+abstiene. La razón está en
+[ADR-004](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md).
+
+El texto del usuario viaja **por un canal distinto** al de la instrucción
+—rol `user` frente a rol `system`—, delimitado y con orden explícita de
+tratarlo como dato. La salida se valida contra el catálogo cerrado de 12
+categorías antes de aceptarse.
+
+### Corrección del módulo heredado
+
+[`legacy/legacy_module.py`](legacy/legacy_module.py) — los tres defectos
+reportados, cada uno con su prueba en rojo antes del arreglo.
+
+| | Causa raíz | Efecto medido sobre los 2.000 registros |
+|---|---|---|
+| **S1** | El docstring define el periodo como cerrado; la condición usaba comparadores estrictos | El informe trimestral pasa de 311 a **327** tickets |
+| **S2** | Argumento mutable por defecto: se evalúa una vez al definir la función y lo comparten todas las llamadas | Deja de inflar cifras **y** de mutar un resumen ya entregado |
+| **S3** | Comparación exacta contra un literal, sobre un dato que llega escrito de tres formas | Tasa de reapertura de **8,25 % a 26,4 %** (+363 tickets) |
+
+El cambio total al módulo son **tres líneas de lógica**: se corrigió lo que
+estaba mal, no se reescribió.
+
 ### Consultas SQL
 
 [`sql/consultas.sql`](sql/consultas.sql) — agregación por área, join de tres
@@ -158,7 +221,7 @@ coste de escritura sin beneficio de lectura.
 
 Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 
-1. **Las 12 categorías salieron de los datos, no del enunciado.** Las 58
+1. **Las 12 categorías salieron de los datos, no de una lista dada.** Las 58
    variantes colapsan en 12 al unir sinónimos, y R-01 declara 12. La
    coincidencia es la evidencia de que el catálogo es ese.
 2. **`fecha_cierre` vacía es un ticket abierto, no un dato sucio.** Son 1.299
@@ -215,6 +278,7 @@ Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 | [`docs/adr/ADR-002`](docs/adr/ADR-002-orquestacion.md) | Orquestación propia, sin n8n ni framework de agentes |
 | [`docs/adr/ADR-004`](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md) | Desacoplamiento del proveedor y cadena de reserva |
 | [`docs/adr/ADR-005`](docs/adr/ADR-005-frontera-determinista-probabilistico.md) | Qué resuelve una regla, qué un modelo, y qué se queda sin resolver |
+| [`docs/api.md`](docs/api.md) | Qué resuelve la API, para quién, y qué **no** hace |
 
 ---
 
@@ -248,11 +312,35 @@ Lo que **no** quedó hecho, y por qué.
   de elegir una en silencio, pero **cuál es la correcta es una pregunta para
   el negocio**, no para el código.
 
+**De la etapa 2:**
+
+- **La API no autentica y no limita la tasa de peticiones.** Antes de
+  exponerla fuera de una red controlada haría falta autenticación y
+  autorización por área.
+- **Las solicitudes viven en memoria y se pierden al reiniciar.** El
+  almacenamiento está detrás de un puerto ([D-005](docs/decisiones.md)), así
+  que pasar a SQL es escribir un adaptador, no reescribir.
+- **Las claves de idempotencia no caducan.** Medido: 10.000 claves únicas
+  dejan 10.000 entradas retenidas. Con persistencia real haría falta
+  caducarlas y hacer única la clave en la base, porque un cerrojo de proceso
+  no protege nada cuando hay varios procesos.
+- **La clasificación ocurre dentro de la petición de creación**, y R-01 dice
+  que *«corre en lote cada hora, no requiere respuesta inmediata»*. En
+  producción convendría desacoplarla: un lote horario cuesta bastante menos.
+  Se hizo síncrona para que la integración sea observable de punta a punta.
+- **Ningún proveedor de lenguaje real se ha ejercitado.** Todo está probado
+  contra transporte simulado. Los identificadores de modelo de
+  `.env.example` están vacíos a propósito: se consultan contra cada
+  proveedor, no se ponen de memoria.
+- **Las pruebas de concurrencia son red de regresión, no demostración.** Bajo
+  el GIL la carrera del registro de idempotencia se reproduce 1 de cada 2
+  corridas con 64 hilos, y a través del cliente de pruebas no se manifiesta
+  nunca. El cerrojo está por el argumento, no por la prueba.
+
 **Del proyecto:**
 
-- **No se recibió la credencial del proveedor de IA** que el enunciado
-  ofrece. Se escribió al canal habilitado. Se usan proveedores propios
-  (Groq, DashScope, OpenAI), lo cual el Anexo A admite siempre que se declare
-  y se explique el criterio; el criterio está en
+- **No se recibió la credencial del proveedor de IA prevista.** Se usan
+  proveedores propios (Groq, DashScope, OpenAI) o un modelo local, y el
+  criterio de la elección está declarado en
   [ADR-004](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md).
-- **Etapas 2 a 5 en curso.** Este README se actualiza al cerrar cada una.
+- **Etapas 3 a 5 en curso.** Este README se actualiza al cerrar cada una.
