@@ -36,3 +36,7 @@ per-file-ignores = { "tests/*" = ["S101", "S105", "S106", "S107"] }
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-q"
+# El modulo heredado se corrige, no se adopta: vive en legacy/ y no es parte
+# del paquete mai. Esta linea le da a pytest la ruta para importarlo sin
+# convertirlo en dependencia de src/.
+pythonpath = ["legacy"]
