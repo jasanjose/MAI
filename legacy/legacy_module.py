@@ -84,7 +84,11 @@ def contar_reaperturas(tickets):
     """Cuenta cuántos tickets fueron reabiertos al menos una vez."""
     total = 0
     for t in tickets:
-        if t.get("estado") == "reabierto":
+        # El histórico escribe el estado como REABIERTO, Reabierto y
+        # reabierto, y con espacios sobrantes. La comparación exacta
+        # reconocía solo una de las tres formas.
+        estado = (t.get("estado") or "").strip().lower()
+        if estado == "reabierto":
             total += 1
     return total
 
