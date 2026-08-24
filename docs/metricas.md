@@ -132,9 +132,10 @@ Toda llamada a un proveedor externo registra `latencia_ms`,
 `tokens_entrada`, `tokens_salida`, `costo_estimado`, `proveedor`, `modelo` y
 `resultado` (`exito` / `degradado` / `error`).
 
-La estimación mensual con supuestos declarados, el presupuesto máximo y qué
-hace el sistema al superarlo van en `docs/costos.md` (etapa 4). Aquí se fija
-la obligación de medir; allá el número.
+La estimación mensual con supuestos declarados y las cifras medidas contra
+proveedores reales van en [`costos.md`](costos.md); el presupuesto máximo y
+qué hace el sistema al superarlo, en [`arquitectura.md`](arquitectura.md) §7.
+Aquí se fija la obligación de medir; allá el número.
 
 **No se declara un objetivo de costo en este momento** porque no hay
 medición todavía, y un objetivo de costo inventado no sirve para decidir
@@ -190,6 +191,7 @@ Declarado en vez de omitido:
   costo de asignar mal es visible e inmediato, y el de no asignar es que el
   ticket queda en `Sin clasificar`, que es un estado válido y revisable.
 - **Objetivo de costo mensual.** Sin medición previa sería un número
-  inventado. Va en `docs/costos.md` con supuestos declarados.
+  inventado. La medición llegó después y está en [`costos.md`](costos.md); el
+  objetivo se fija sobre ella, no sobre una estimación.
 - **Umbral de similitud.** Pendiente de calibración, §4.
 - **Métricas de la pantalla Angular.** Fuera de alcance de este documento.

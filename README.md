@@ -23,10 +23,12 @@ el sistema.
 
 ### Lo más importante que hay que saber antes de leer el código
 
-**Ningún proveedor de IA real se ha ejercitado.** No llegó credencial y no se
-usó ninguna propia. Todo el módulo de lenguaje está construido y probado
-contra un transporte simulado. Con la configuración por defecto —`RUTA_*=falso`—
-toda consulta de política **se abstiene**, y eso es correcto: el adaptador de
+**La clasificación está medida contra proveedores reales; la consulta de
+políticas no.** Cinco modelos de tres proveedores corrieron sobre el conjunto
+de referencia: los resultados, con costo y latencia, están en
+[`costos.md`](docs/costos.md). El componente de RAG sigue probado solo contra
+transporte simulado. Con la configuración por defecto —`RUTA_*=falso`— toda
+consulta de política **se abstiene**, y eso es correcto: el adaptador de
 pruebas no cita, y una respuesta sin cita verificable no se emite.
 
 Tres cosas que este proyecto midió y que cambian cómo se lee el resto:
@@ -367,6 +369,7 @@ Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 | [`docs/adr/ADR-004`](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md) | Desacoplamiento del proveedor y cadena de reserva |
 | [`docs/adr/ADR-005`](docs/adr/ADR-005-frontera-determinista-probabilistico.md) | Qué resuelve una regla, qué un modelo, y qué se queda sin resolver |
 | [`docs/api.md`](docs/api.md) | Qué resuelve la API, para quién, y qué **no** hace |
+| [`docs/costos.md`](docs/costos.md) | Costo y latencia **medidos** contra proveedores reales, con el modelo recomendado |
 | [`docs/calibracion_umbral.md`](docs/calibracion_umbral.md) | Por qué el umbral es 0.20 y por qué ningún valor cumple el 100 % |
 | [`docs/informe_seguridad.md`](docs/informe_seguridad.md) | Siete hallazgos con su corrección, y cinco riesgos abiertos |
 | [`docs/guia_equipo.md`](docs/guia_equipo.md) | Cómo revisar código generado por IA, con los incidentes de este proyecto |
@@ -421,10 +424,12 @@ Lo que **no** quedó hecho, y por qué.
   que *«corre en lote cada hora, no requiere respuesta inmediata»*. En
   producción convendría desacoplarla: un lote horario cuesta bastante menos.
   Se hizo síncrona para que la integración sea observable de punta a punta.
-- **Ningún proveedor de lenguaje real se ha ejercitado.** Todo está probado
-  contra transporte simulado. Los identificadores de modelo de
-  `.env.example` están vacíos a propósito: se consultan contra cada
-  proveedor, no se ponen de memoria.
+- **La clasificación se midió contra modelos reales** el 24 de agosto de 2026
+  —96,5 % de exactitud con el mejor, p95 de 733 ms, $5,20 al mes con el volumen
+  de R-01—; ver [`costos.md`](docs/costos.md). Una sola pasada por caso: la
+  conclusión de costo es firme, la de exactitud es indicativa. Los
+  identificadores de modelo de `.env.example` siguen vacíos a propósito: se
+  consultan contra cada proveedor, no se ponen de memoria.
 - **Las pruebas de concurrencia son red de regresión, no demostración.** Bajo
   el GIL la carrera del registro de idempotencia se reproduce 1 de cada 2
   corridas con 64 hilos, y a través del cliente de pruebas no se manifiesta
@@ -445,10 +450,11 @@ Lo que **no** quedó hecho, y por qué.
 
 **De la etapa 3:**
 
-- **Ningún proveedor de lenguaje real se ha ejercitado.** Todo está probado
-  contra transporte simulado. Con el adaptador falso, toda consulta de
-  política se abstiene en la verificación de cita — que es el comportamiento
-  correcto, porque ese adaptador no cita.
+- **El componente de RAG no se ha ejercitado contra un proveedor real.** La
+  medición del 24 de agosto cubrió la clasificación, no la consulta de
+  políticas. Con el adaptador falso, toda consulta se abstiene en la
+  verificación de cita — que es el comportamiento correcto, porque ese
+  adaptador no cita.
 - **La abstención del 100 % no está verificada de extremo a extremo.** La
   primera puerta sí, con datos reales: descarta 2 de 6 casos sin respaldo.
   Los otros 4 dependen de que un modelo real diga «no tengo evidencia», y eso
@@ -494,6 +500,7 @@ Lo que **no** quedó hecho, y por qué.
 | CI: ejecución exitosa y fallida | [`docs/integracion_continua.md`](docs/integracion_continua.md) |
 | Informe de seguridad | [`docs/informe_seguridad.md`](docs/informe_seguridad.md) |
 | Observabilidad | `GET /metricas` · `src/mai/observabilidad/` |
+| Costo y latencia medidos | [`docs/costos.md`](docs/costos.md) |
 | Artefacto para el equipo | [`docs/guia_equipo.md`](docs/guia_equipo.md) |
 | Arquitectura y ADR | [`docs/arquitectura.md`](docs/arquitectura.md) · 5 ADR en `docs/adr/` |
 | Decisión R-01/R-02/R-03 | [`docs/decision_requerimientos.md`](docs/decision_requerimientos.md) |
