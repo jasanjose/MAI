@@ -23,20 +23,22 @@ el sistema.
 
 ### Lo más importante que hay que saber antes de leer el código
 
-**La clasificación está medida contra proveedores reales; la consulta de
-políticas no.** Cinco modelos de tres proveedores corrieron sobre el conjunto
-de referencia: los resultados, con costo y latencia, están en
-[`costos.md`](docs/costos.md). El componente de RAG sigue probado solo contra
-transporte simulado. Con la configuración por defecto —`RUTA_*=falso`— toda
-consulta de política **se abstiene**, y eso es correcto: el adaptador de
-pruebas no cita, y una respuesta sin cita verificable no se emite.
+**Las dos tareas están medidas contra proveedores reales.** Clasificación y
+consulta de políticas corrieron sobre el conjunto de referencia con modelos de
+verdad: exactitud, latencia, tokens y costo están en
+[`costos.md`](docs/costos.md). **La solución completa cuesta menos de seis
+dólares al mes** con el volumen que declara el negocio. Con la configuración
+por defecto —`RUTA_*=falso`— toda consulta de política **se abstiene**, y eso es
+correcto: el adaptador de pruebas no cita, y una respuesta sin cita verificable
+no se emite.
 
-Tres cosas que este proyecto midió y que cambian cómo se lee el resto:
+Cuatro cosas que este proyecto midió y que cambian cómo se lee el resto:
 
 | Hallazgo | Dónde |
 |---|---|
 | **Ningún umbral de similitud cumple la abstención del 100 %.** No es un problema de calibración: es el límite de la recuperación léxica. Por eso la verificación de cita es un control portante y no un refuerzo | [`calibracion_umbral.md`](docs/calibracion_umbral.md) |
 | **El 99 % de precisión del clasificador clásico era falso.** 2.000 filas con 50 asuntos distintos: partiendo por asunto queda por debajo de la línea base | [`comparacion_enfoques.md`](docs/comparacion_enfoques.md) |
+| **La primera puerta de abstención también ahorra dinero.** Dos de cada veintisiete consultas se descartan por umbral **sin llegar al modelo**: un 7 % de llamadas que no se pagan, y la puerta se puso para no inventar, no para ahorrar | [`costos.md`](docs/costos.md) |
 | **La integración continua estuvo 37 ejecuciones en rojo sin detectarse**, por un falso positivo del detector de secretos. Lo relevante no es el falso positivo: es que se había dejado de correr la verificación completa | [`integracion_continua.md`](docs/integracion_continua.md) |
 
 ---
@@ -46,7 +48,7 @@ Tres cosas que este proyecto midió y que cambian cómo se lee el resto:
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-pytest          # 501 pruebas, sin red ni credenciales
+pytest          # 519 pruebas, sin red ni credenciales
 ruff check .
 bandit -r src/
 ```
@@ -132,7 +134,7 @@ publica en `/openapi.json`, con navegador en `/docs`.
 ### Pruebas
 
 ```bash
-pytest          # 501 pruebas, sin red y sin credenciales
+pytest          # 519 pruebas, sin red y sin credenciales
 ruff check .
 bandit -r src/
 ```
@@ -227,7 +229,7 @@ proveedor concreto. Cambiar de modelo es cambiar `RUTA_CLASIFICACION` o
 
 | Adaptador | Para qué |
 |---|---|
-| `falso` | Determinista, sin red. Es lo que hace que las 501 pruebas corran en integración continua sin credenciales |
+| `falso` | Determinista, sin red. Es lo que hace que las 519 pruebas corran en integración continua sin credenciales |
 | `compatible` | Un archivo para **cinco proveedores** — Groq, DashScope, OpenAI, OpenRouter y Ollama hablan todos Chat Completions |
 | `enrutador` | Cadena con reserva. **Implementa el mismo puerto**, así que el dominio no distingue un proveedor de una cadena de cinco |
 
@@ -454,11 +456,10 @@ Lo que **no** quedó hecho, y por qué.
 
 **De la etapa 3:**
 
-- **El componente de RAG no se ha ejercitado contra un proveedor real.** La
-  medición del 24 de agosto cubrió la clasificación, no la consulta de
-  políticas. Con el adaptador falso, toda consulta se abstiene en la
-  verificación de cita — que es el comportamiento correcto, porque ese
-  adaptador no cita.
+- **El corpus de políticas no se valida al ingerir.** Un PDF con instrucciones
+  embebidas entraría al índice y de ahí al prompt. Con el adaptador falso, toda
+  consulta se abstiene en la verificación de cita — que es el comportamiento
+  correcto, porque ese adaptador no cita.
 - **La abstención del 100 % depende del modelo, y está medida.** Con tres
   modelos reales sobre los 6 casos sin respaldo: uno abstiene en el 100 % y
   cumple la condición dura; los otros dos se quedan en el 83 %. El caso que se
@@ -484,6 +485,15 @@ Lo que **no** quedó hecho, y por qué.
   completa y no se estaban leyendo las ejecuciones.
 - **El costo en dinero no se estima**, solo se miden tokens y latencia. El
   precio por millón se verifica contra cada proveedor, no se pone de memoria.
+
+**De seguridad:**
+
+- **El texto libre del ticket no se depura antes de salir hacia el proveedor.**
+  El solicitante sí: nunca se envía, y la restricción vive en el dominio. Pero
+  una descripción escrita por una persona puede llevar una cédula o un teléfono
+  dentro, y hoy nada lo detecta. Con datos sintéticos no importa; con datos
+  reales sería lo primero que habría que construir. Declarado en
+  [`declaracion_uso_ia.md`](docs/declaracion_uso_ia.md).
 
 **Del proyecto:**
 

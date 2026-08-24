@@ -53,12 +53,19 @@ haría el documento inservible para quien tenga que continuarlo.
 `rag/`, ni ninguna librería de infraestructura. Es verificable en un segundo:
 
 ```bash
-grep -rE "^(from|import)" src/mai/dominio/ | grep -E "adaptador|httpx|fastapi|pypdf"
+grep -rE "^[[:space:]]*(from|import)[[:space:]]" src/mai/dominio/ \
+  | grep -E "adaptador|httpx|fastapi|pypdf"
 # (vacío)
 ```
 
+El espacio tras `from` e `import` no sobra. Sin él, el patrón también atrapa
+cualquier línea que empiece por «importar» —hay una, en un comentario de
+`puertos.py`— y la comprobación devuelve una coincidencia justo donde afirma
+que no hay ninguna. Un verificador con un falso positivo es peor que ninguno:
+enseña a ignorar su salida.
+
 Esa regla es lo que hace que cambiar de proveedor sea cambiar una variable de
-entorno, y lo que permite que las 501 pruebas corran sin red ni credenciales.
+entorno, y lo que permite que las 519 pruebas corran sin red ni credenciales.
 
 ---
 

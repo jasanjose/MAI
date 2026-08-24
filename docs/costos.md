@@ -27,6 +27,18 @@ pasada por caso.
 Qwen Flash es 1,7× más rápido, pero acierta menos y cuesta un 46 % más, porque
 su token de salida vale casi cuatro veces lo que el del otro.
 
+### Las dos tareas juntas
+
+| Modelo | Clasificación | Consulta de políticas | **Total mensual** |
+|---|---:|---:|---:|
+| **DeepSeek Flash** | 5,20 | 0,28 | **5,48 USD** |
+| Qwen Flash | 7,59 | 0,43 | **8,02 USD** |
+
+Con el volumen que declara el negocio —3.000 clasificaciones y 80 consultas
+diarias— **la solución completa cuesta menos de seis dólares al mes.** El
+número importa menos que el orden de magnitud: el costo del modelo no es lo que
+decide si este sistema se sostiene.
+
 Los dos entran holgados bajo el umbral de p95 ≤ 5 s que
 [`metricas.md`](metricas.md) §3 fijó **antes** de construir. Con ese margen, la
 latencia deja de ser el criterio de elección y el costo pasa a serlo.
@@ -85,23 +97,32 @@ que el proveedor no la mire.
 
 ---
 
-## 3 · Qué no se midió
+## 3 · La consulta de políticas, medida
 
-- **El costo de la tarea de RAG.** Se midió su comportamiento (abajo), no su
-  consumo: la proyección de tokens de la consulta de políticas sigue siendo la
-  de `arquitectura.md` §7, con sus supuestos declarados.
-- **Una sola pasada por caso.** Con 29 casos y N=1, una diferencia de un acierto
-  —los 3,4 puntos entre los dos modelos— está dentro de lo que puede moverse
-  entre corridas. La conclusión de costo es firme; la de exactitud, indicativa.
-- **El presupuesto máximo y su alerta** siguen sin construirse. Lo que este
-  documento aporta es la cifra sobre la que fijarlo.
-- **Descuento por caché de entrada.** Los proveedores lo ofrecen y aquí no se
-  aplicó; con un prompt de sistema idéntico entre llamadas, el costo real sería
-  menor que el de esta tabla.
+Las 27 consultas del conjunto de referencia contra el proveedor real, sobre el
+índice de 67 fragmentos:
+
+```
+27 consultas · 25 llamadas al modelo · 0 errores
+14.103 tokens de entrada · 876 de salida · 0 de razonamiento
+p95 de POST /consultas: 1.072 ms      (umbral de metricas.md §3: 4.000 ms)
+```
+
+**El supuesto era conservador, no optimista.** `arquitectura.md` §7 asumía 900
+tokens de entrada y 120 de salida por consulta. Lo medido es **564 y 35** — el
+supuesto era 1,6× y 3,4× más alto. Conviene decirlo así: una estimación que se
+pasa de alta es un error distinto de una que se queda corta, y solo la segunda
+produce sorpresas en la factura.
+
+**La primera puerta también ahorra dinero.** Dos de las 27 consultas se
+abstuvieron **sin llegar al modelo**: el umbral de similitud las descartó antes
+de gastar una llamada. Es un 7,4 % que no se paga. No estaba en el argumento de
+diseño —la puerta se puso para no inventar, no para ahorrar— y es un beneficio
+que solo aparece midiendo.
 
 ---
 
-## 3 bis · La abstención del RAG depende del modelo
+## 4 · La abstención del RAG depende del modelo
 
 Medido el mismo día sobre los 6 casos sin respaldo documental del conjunto de
 referencia, con `scripts/evaluar.py` contra proveedores reales:
@@ -143,7 +164,23 @@ Mientras tanto, la mitigación es de configuración y no de código: poner en
 
 ---
 
-## 4 · Cómo se reproduce
+## 5 · Qué no se midió
+
+- **El corpus es de cinco documentos.** Las cifras de la consulta de políticas
+  salen de un índice de 67 fragmentos. Con un corpus mayor crece el prompt y con
+  él el costo por consulta.
+- **Una sola pasada por caso.** Con 29 casos y N=1, una diferencia de un acierto
+  —los 3,4 puntos entre los dos modelos— está dentro de lo que puede moverse
+  entre corridas. La conclusión de costo es firme; la de exactitud, indicativa.
+- **El presupuesto máximo y su alerta** siguen sin construirse. Lo que este
+  documento aporta es la cifra sobre la que fijarlo.
+- **Descuento por caché de entrada.** Los proveedores lo ofrecen y aquí no se
+  aplicó; con un prompt de sistema idéntico entre llamadas, el costo real sería
+  menor que el de esta tabla.
+
+---
+
+## 6 · Cómo se reproduce
 
 ```bash
 RUTA_CLASIFICACION=<proveedor> python scripts/evaluar.py
