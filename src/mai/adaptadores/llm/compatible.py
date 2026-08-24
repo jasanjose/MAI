@@ -71,11 +71,17 @@ class AdaptadorCompatible(ProveedorLLM):
         espera_base_s: float = ESPERA_BASE_S,
         transporte: httpx.BaseTransport | None = None,
         dormir: Callable[[float], None] = time.sleep,
+        cuerpo_extra: dict[str, object] | None = None,
     ) -> None:
         if not base_url.strip():
             raise ValueError(f"El proveedor «{nombre}» no tiene base_url configurada.")
         if not modelo.strip():
             raise ValueError(f"El proveedor «{nombre}» no tiene modelo configurado.")
+
+        # Ajustes propios del proveedor (ver adaptadores/llm/perfiles.py). Se
+        # copia lo recibido: guardar la referencia dejaria que quien la pasó
+        # mutara el cuerpo de todas las peticiones siguientes.
+        self._cuerpo_extra = dict(cuerpo_extra or {})
 
         self._nombre = nombre
         self._modelo = modelo
@@ -109,6 +115,11 @@ class AdaptadorCompatible(ProveedorLLM):
     def completar(self, instruccion: str, entrada: str) -> RespuestaLLM:
         """Pide una respuesta al modelo, con reintento y medición."""
         cuerpo = {
+            # Los ajustes del proveedor van PRIMERO para que las claves de
+            # abajo los sobrescriban y no al revés. Un perfil mal escrito puede
+            # degradar la petición; no puede cambiar a qué modelo se pregunta
+            # ni qué se le manda.
+            **self._cuerpo_extra,
             "model": self._modelo,
             "temperature": TEMPERATURA,
             "messages": [
@@ -199,6 +210,12 @@ class AdaptadorCompatible(ProveedorLLM):
         entrada = uso.get("prompt_tokens")
         salida = uso.get("completion_tokens")
 
+        # El desglose es opcional en la especificación. Ausente se declara
+        # None, no cero: un cero afirmaría que el modelo no razonó, y lo que
+        # se sabe es que no lo informó.
+        detalle = uso.get("completion_tokens_details") or {}
+        razonamiento = detalle.get("reasoning_tokens") if isinstance(detalle, dict) else None
+
         latencia_ms = self._registrar(inicio, "exito", entrada, salida)
         return RespuestaLLM(
             texto=texto,
@@ -207,6 +224,7 @@ class AdaptadorCompatible(ProveedorLLM):
             latencia_ms=latencia_ms,
             tokens_entrada=entrada if isinstance(entrada, int) else None,
             tokens_salida=salida if isinstance(salida, int) else None,
+            tokens_razonamiento=razonamiento if isinstance(razonamiento, int) else None,
         )
 
     def _registrar(

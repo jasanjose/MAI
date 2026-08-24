@@ -5,10 +5,12 @@ que ella misma tiene que estar probada: una evaluación que no detecta un fallo
 es peor que ninguna, porque da permiso.
 """
 
+import csv
 from pathlib import Path
 
 import pytest
 
+from mai.dominio.catalogos import CATEGORIAS_VALIDAS
 from mai.dominio.politicas import (
     MOTIVO_SIN_CITA,
     MOTIVO_SIN_EVIDENCIA,
@@ -19,6 +21,7 @@ from mai.dominio.politicas import (
 from mai.evaluacion.suite import (
     ESCALAMIENTO_MAXIMO,
     RECALL_MINIMO,
+    SIN_EVIDENCIA,
     CasoDeReferencia,
     Resultado,
     cargar_referencia,
@@ -246,3 +249,37 @@ def test_la_suite_corre_contra_el_sistema_real_y_cumple_los_umbrales_evaluables(
 
     assert r.recall == 1.0
     assert verificar_umbrales(r) == []
+
+
+# Respuestas esperadas que NO son categorías: describen que el sistema debe
+# rechazar la entrada, no clasificarla. Van declaradas aquí para que la prueba
+# de abajo distinga «centinela legítimo» de «etiqueta mal escrita».
+CENTINELAS_DE_REFERENCIA = frozenset({"RECHAZO_ENTRADA_VACIA"})
+
+
+def test_toda_etiqueta_de_clasificacion_existe_en_el_catalogo_cerrado():
+    """Una etiqueta que el catálogo no puede producir es un fallo garantizado.
+
+    El conjunto de referencia es la vara contra la que se mide el modelo. Si la
+    respuesta esperada no está entre los 12 valores que la validación de salida
+    acepta, ese caso **no puede acertar jamás**: por bien que clasifique el
+    modelo, la comparación falla — y falla atribuyendo el error al modelo, que
+    es lo peor, porque se busca la causa donde no está.
+
+    **Se lee el CSV directamente y no con `cargar_referencia`**, que descarta
+    justo las filas de clasificación por no ser de su competencia. Ese descarte
+    es correcto para lo que esa función hace, y es también la razón de que estas
+    filas llevaran desde el primer día sin que ninguna comprobación las mirara.
+
+    El defecto se encontró midiendo contra un proveedor real: el banco reportó
+    seis fallos que resultaron ser tildes ausentes en la etiqueta esperada.
+    """
+    validas = set(CATEGORIAS_VALIDAS) | CENTINELAS_DE_REFERENCIA
+    fuera = {}
+    for fila in csv.DictReader(REFERENCIA.open(encoding="utf-8")):
+        esperado = fila["respuesta_o_categoria_esperada"].strip()
+        de_clasificacion = not fila["documento_fuente"].strip() and esperado != SIN_EVIDENCIA
+        if de_clasificacion and esperado not in validas:
+            fuera[fila["id_caso"]] = esperado
+
+    assert not fuera, f"etiquetas que el catálogo no produce: {fuera}"
