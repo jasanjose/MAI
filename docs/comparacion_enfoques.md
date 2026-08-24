@@ -81,9 +81,9 @@ uno a «Accesos». Es el único sitio donde el modelo tuvo que decidir de verdad
 
 | | Clásico (Naive Bayes) | Modelo de lenguaje |
 |---|---|---|
-| **Precisión medida aquí** | 99 % con fuga · **6–23 % sin ella** | **No medida**: no hay credencial |
-| **Costo por 1.000 solicitudes** | ~0 variable. Costo fijo de entrenar | ~270.000 tokens de entrada |
-| **Latencia** | microsegundos, en proceso | cientos de ms a segundos, por red |
+| **Precisión medida aquí** | 99 % con fuga · **6–23 % sin ella** | **96,5 %** sobre el conjunto de referencia |
+| **Costo por 1.000 solicitudes** | ~0 variable. Costo fijo de entrenar | **0,058 USD** medidos |
+| **Latencia** | microsegundos, en proceso | **p95 de 733 ms**, medida |
 | **Determinismo** | total: misma entrada, misma salida | alto con temperatura 0, no garantizado |
 | **Categoría nueva** | reentrenar | una línea en el prompt |
 | **Explicabilidad** | qué términos pesaron, término a término | ninguna |
@@ -92,10 +92,19 @@ uno a «Accesos». Es el único sitio donde el modelo tuvo que decidir de verdad
 
 ### Lo que NO se puede afirmar, y por qué
 
+> **Actualizado el 24 de agosto.** La versión anterior de esta tabla decía «no
+> medida: no hay credencial» en las tres primeras filas. Se consiguió acceso y
+> se midieron tres modelos de tres proveedores sobre los 29 casos de
+> clasificación del conjunto de referencia; el detalle está en
+> [`costos.md`](costos.md).
+
 **No se puede afirmar que el clásico gane, ni que pierda.** Falta:
 
-1. **La medición del modelo de lenguaje.** Sin credencial no se ejecutó ni una
-   clasificación real. Está construido y probado contra transporte simulado.
+1. **Una base comparable.** El modelo de lenguaje se midió sobre los 29 casos
+   etiquetados a mano del conjunto de referencia; el clásico, sobre el histórico
+   particionado. **No son el mismo conjunto**, así que 96,5 % y 6–23 % no se
+   restan. Lo que sí se puede afirmar es que el clásico, sin fuga, queda por
+   debajo de su propia línea base — y eso no depende de la comparación.
 2. **Un conjunto de datos que permita estimar generalización.** El entregado
    no lo permite, y eso limita a ambos: sobre 50 textos memorizables, el
    modelo de lenguaje también acertaría casi todo.

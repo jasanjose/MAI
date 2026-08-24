@@ -26,7 +26,7 @@ las 3.000 desde cero.
 | **El analista de la mesa de ayuda** | Consulta y filtra lo que le toca por área, prioridad o estado |
 | **Quien reporta** | Consulta el estado de su solicitud con el código que recibió |
 
-## Qué hace, en tres operaciones
+## Qué hace: tres operaciones de negocio y dos de operación
 
 **Registrar una solicitud.** Se envía asunto, descripción, área y quién
 reporta. Devuelve un código —`SOL-000001`— con el que se consulta después.
@@ -36,6 +36,44 @@ quedó clasificada.
 
 **Listar con filtros.** Por área, estado, categoría y prioridad, con
 paginación. Las más recientes primero.
+
+Aparte de las tres, hay dos operaciones que no son del negocio sino de quien
+opera el sistema:
+
+**`GET /salud`.** Si está en pie, con qué proveedor quedó configurada cada
+tarea y cuántos fragmentos de política tiene indexados. Ese último número es el
+que delata una configuración mal puesta: **un cero ahí significa que la ruta al
+corpus está mal**, y el sistema arranca igual porque fallar al arrancar
+tumbaría también la parte que sí funciona.
+
+**`GET /metricas`.** Lo acumulado desde que arrancó el proceso:
+
+| Grupo | Qué trae |
+|---|---|
+| `operaciones` | latencia p50/p95/p99 y cuenta, por ruta |
+| `clasificacion` | total, cuántas degradadas, y **el desglose por motivo** |
+| `consultas` | total, cuántas abstenidas, y por qué motivo |
+| `proveedor_llm` | llamadas, tokens de entrada y salida, y **cuántos de salida fueron razonamiento** |
+
+Tres decisiones que conviene entender al leerla:
+
+**El desglose por motivo es lo que la hace accionable.** Un proveedor caído y un
+modelo que devuelve basura degradan igual y exigen acciones opuestas. Sin el
+motivo, la tasa dice que algo va mal y no qué.
+
+**Los tokens ausentes no se cuentan como cero.** Van aparte, en
+`llamadas_sin_tokens_reportados`. Sumar ceros haría parecer que el sistema
+consume menos de lo que consume, y esa es justo la cifra que se usa para
+presupuestar.
+
+**`tokens_razonamiento` no se suma al total**: ya viene dentro de
+`tokens_salida`. Está separado porque es lo único que distingue un modelo
+verboso de uno que razona de más — y solo el segundo se arregla apagando un
+ajuste, sin cambiar de modelo.
+
+`costo_estimado` viene en `null` a propósito: exige el precio por millón de cada
+proveedor, que se consulta contra su consola y no se pone de memoria. Las cifras
+medidas están en [`costos.md`](costos.md).
 
 ---
 
