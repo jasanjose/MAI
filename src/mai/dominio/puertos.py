@@ -72,6 +72,14 @@ class RespuestaLLM:
     latencia_ms: float
     tokens_entrada: int | None = None
     tokens_salida: int | None = None
+    tokens_razonamiento: int | None = None
+    """Parte de `tokens_salida` que el modelo gastó razonando, si lo informa.
+
+    No se suma al costo: ya viene dentro de `tokens_salida`. Se separa para
+    poder **diagnosticar** por qué una llamada salió cara. Sin este desglose,
+    un modelo que razona de más y uno que responde de más se ven idénticos
+    desde fuera, y solo uno de los dos se arregla apagando un flag.
+    """
 
 
 class ProveedorLLM(ABC):

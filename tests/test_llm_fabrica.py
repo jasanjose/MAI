@@ -12,13 +12,13 @@ import pytest
 from mai.adaptadores.llm.compatible import AdaptadorCompatible
 from mai.adaptadores.llm.enrutador import EnrutadorLLM
 from mai.adaptadores.llm.fabrica import (
-    PROVEEDORES_COMPATIBLES,
     ConfiguracionInvalida,
     construir_cadena,
     construir_para_clasificacion,
     construir_para_rag,
 )
 from mai.adaptadores.llm.falso import AdaptadorFalso
+from mai.adaptadores.llm.perfiles import PERFILES
 from mai.dominio.clasificacion import Clasificador
 from mai.dominio.puertos import ProveedorLLM
 
@@ -92,10 +92,17 @@ def test_rechaza_una_ruta_de_solo_comas():
 
 
 def test_rechaza_un_proveedor_desconocido_y_dice_cuales_hay():
-    with pytest.raises(ConfiguracionInvalida) as error:
-        construir_cadena("gemini", entorno=ENTORNO_COMPLETO)
+    """El nombre inventado se elige a propósito para que no pueda existir.
 
-    assert "gemini" in str(error.value)
+    Esta prueba usaba «gemini» como ejemplo de desconocido y dejó de probar lo
+    que dice el día que gemini entró en la tabla: seguía en verde comprobando
+    otra cosa. Un nombre que sí podría llegar a ser un proveedor no sirve como
+    ejemplo de proveedor imposible.
+    """
+    with pytest.raises(ConfiguracionInvalida) as error:
+        construir_cadena("no-existe-este-proveedor", entorno=ENTORNO_COMPLETO)
+
+    assert "no-existe-este-proveedor" in str(error.value)
     assert "groq" in str(error.value)
     assert "falso" in str(error.value)
 
@@ -186,7 +193,7 @@ def test_todo_proveedor_que_el_codigo_acepta_esta_documentado_en_env_example():
     ejemplo = (Path(__file__).parent.parent / ".env.example").read_text(encoding="utf-8")
     documentados = {p.lower() for p in re.findall(r"^([A-Z]+)_BASE_URL", ejemplo, re.M)}
 
-    assert set(PROVEEDORES_COMPATIBLES) == documentados
+    assert set(PERFILES) == documentados
 
 
 def test_env_example_no_trae_ninguna_credencial_con_valor():
