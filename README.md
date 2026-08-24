@@ -394,10 +394,12 @@ Lo que **no** quedó hecho, y por qué.
   y resolvería esto, pero no se ha conectado.
 - **El corpus de políticas no se valida al ingerir.** Un PDF con
   instrucciones embebidas entraría al índice y de ahí al prompt.
-- **Las pantallas de Actions de la ejecución fallida no se capturaron.** La
-  cuenta de `gh` de la máquina no tiene acceso al repositorio privado. La
-  evidencia en [`docs/integracion_continua.md`](docs/integracion_continua.md)
-  es la reproducción local de los mismos comandos.
+- **Durante 37 ejecuciones consecutivas la integración continua estuvo en
+  rojo sin que se detectara**, por un falso positivo del detector de secretos
+  sobre un valor de prueba. Corregido, con el post mortem en
+  [`docs/integracion_continua.md`](docs/integracion_continua.md). Lo relevante
+  no es el falso positivo: es que se había dejado de correr la verificación
+  completa y no se estaban leyendo las ejecuciones.
 - **El costo en dinero no se estima**, solo se miden tokens y latencia. El
   precio por millón se verifica contra cada proveedor, no se pone de memoria.
 
