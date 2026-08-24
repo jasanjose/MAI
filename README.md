@@ -275,7 +275,9 @@ Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 | [`docs/metricas.md`](docs/metricas.md) | Precisión objetivo, latencia p95 y umbrales — **definidos antes de implementar** |
 | [`docs/conjunto_referencia.csv`](docs/conjunto_referencia.csv) | 58 casos etiquetados a mano, con 21 citas verificadas contra los PDF |
 | [`docs/decisiones.md`](docs/decisiones.md) | Alta de dependencias, con lo descartado y su costo |
+| [`docs/adr/ADR-001`](docs/adr/ADR-001-vectorizacion-e-indice.md) | Vectorización, índice y métrica de similitud |
 | [`docs/adr/ADR-002`](docs/adr/ADR-002-orquestacion.md) | Orquestación propia, sin n8n ni framework de agentes |
+| [`docs/adr/ADR-003`](docs/adr/ADR-003-fragmentacion.md) | Fragmentación por sección numerada |
 | [`docs/adr/ADR-004`](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md) | Desacoplamiento del proveedor y cadena de reserva |
 | [`docs/adr/ADR-005`](docs/adr/ADR-005-frontera-determinista-probabilistico.md) | Qué resuelve una regla, qué un modelo, y qué se queda sin resolver |
 | [`docs/api.md`](docs/api.md) | Qué resuelve la API, para quién, y qué **no** hace |
