@@ -130,7 +130,7 @@ publica en `/openapi.json`, con navegador en `/docs`.
 ### Pruebas
 
 ```bash
-pytest          # 470 pruebas, sin red y sin credenciales
+pytest          # 501 pruebas, sin red y sin credenciales
 ruff check .
 bandit -r src/
 ```
@@ -225,7 +225,7 @@ proveedor concreto. Cambiar de modelo es cambiar `RUTA_CLASIFICACION` o
 
 | Adaptador | Para qué |
 |---|---|
-| `falso` | Determinista, sin red. Es lo que hace que las 470 pruebas corran en integración continua sin credenciales |
+| `falso` | Determinista, sin red. Es lo que hace que las 501 pruebas corran en integración continua sin credenciales |
 | `compatible` | Un archivo para **cinco proveedores** — Groq, DashScope, OpenAI, OpenRouter y Ollama hablan todos Chat Completions |
 | `enrutador` | Cadena con reserva. **Implementa el mismo puerto**, así que el dominio no distingue un proveedor de una cadena de cinco |
 
