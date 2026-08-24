@@ -2,7 +2,7 @@
 
 **Alcance:** todo el código de `src/` y `legacy/` de este repositorio, escrito
 en su mayoría con un asistente de IA. **Herramientas:** `ruff` con las reglas
-`S` (bandit) activas, `bandit` sobre `src/`, la suite de 450 pruebas, y
+`S` (bandit) activas, `bandit` sobre `src/`, la suite de 501 pruebas, y
 revisión humana dirigida a la lista de `CLAUDE.md` §5.4.
 
 Los siete hallazgos van con su **corrección ya aplicada** y la prueba que la

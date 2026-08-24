@@ -132,7 +132,7 @@ comandos del flujo:
 | Estado | Commit | Resultado |
 |---|---|---|
 | Rojo | `bb7dcb9` | `4 failed, 141 passed` |
-| Verde | punta de `main` | `470 passed` · ruff y bandit limpios |
+| Verde | punta de `main` | `501 passed` · ruff y bandit limpios |
 
 Y la auditoría de secretos, con el patrón exacto del flujo:
 

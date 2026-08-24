@@ -58,7 +58,7 @@ grep -rE "^(from|import)" src/mai/dominio/ | grep -E "adaptador|httpx|fastapi|py
 ```
 
 Esa regla es lo que hace que cambiar de proveedor sea cambiar una variable de
-entorno, y lo que permite que las 488 pruebas corran sin red ni credenciales.
+entorno, y lo que permite que las 501 pruebas corran sin red ni credenciales.
 
 ---
 
