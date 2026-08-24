@@ -281,6 +281,11 @@ Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 | [`docs/adr/ADR-004`](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md) | Desacoplamiento del proveedor y cadena de reserva |
 | [`docs/adr/ADR-005`](docs/adr/ADR-005-frontera-determinista-probabilistico.md) | Qué resuelve una regla, qué un modelo, y qué se queda sin resolver |
 | [`docs/api.md`](docs/api.md) | Qué resuelve la API, para quién, y qué **no** hace |
+| [`docs/calibracion_umbral.md`](docs/calibracion_umbral.md) | Por qué el umbral es 0.20 y por qué ningún valor cumple el 100 % |
+| [`docs/informe_seguridad.md`](docs/informe_seguridad.md) | Siete hallazgos con su corrección, y cinco riesgos abiertos |
+| [`docs/guia_equipo.md`](docs/guia_equipo.md) | Cómo revisar código generado por IA, con los incidentes de este proyecto |
+| [`docs/revision_pr.md`](docs/revision_pr.md) | Revisión del cambio entregado: 14 hallazgos, 3 críticos |
+| [`docs/declaracion_uso_ia.md`](docs/declaracion_uso_ia.md) | Las cinco preguntas, respondidas con lo que pasó |
 
 ---
 
