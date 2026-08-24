@@ -44,6 +44,13 @@ jobs:
       - name: Pruebas
         run: pytest
 
+      # La suite de evaluacion del componente de IA. Sin el corpus de
+      # politicas —que no se versiona— informa y termina en 0: que no pueda
+      # correr no es lo mismo que que el sistema falle, y confundirlos haria
+      # que un entorno sin corpus se viera igual que uno roto.
+      - name: Evaluacion del componente de IA
+        run: python scripts/evaluar.py
+
   secretos:
     name: Auditoria de secretos y frontera de git
     runs-on: ubuntu-latest
