@@ -12,7 +12,7 @@ escala a una persona lo que no puede resolver.
 | Etapa | Estado | Dónde está |
 |---|---|---|
 | 1 · Fundamentos | ✅ **completa** | `src/mai/`, `sql/`, `tests/` |
-| 2 · Autonomía e integración | ✅ **completa** | `src/mai/api/`, `src/mai/adaptadores/llm/`, `legacy/` |
+| 2 · Autonomía e integración | ✅ **completa**, incluido el opcional | `src/mai/api/`, `src/mai/adaptadores/llm/`, `legacy/`, `frontend/` |
 | 3 · Complejidad y calidad | ✅ **completa** | `src/mai/rag/`, `docs/informe_seguridad.md`, `docs/guia_equipo.md` |
 | 4 · Arquitectura | ✅ **documentada** | `docs/arquitectura.md`, 5 ADR |
 | 5 · Estrategia | ✅ **completa** | `docs/decision_requerimientos.md`, `docs/comparacion_enfoques.md`, `src/mai/evaluacion/` |
@@ -95,6 +95,25 @@ a mano:
 | `2` | Más del 10 % de los registros quedó en cuarentena. Ahí el problema no son los datos: es la fuente |
 
 El umbral se ajusta con `--umbral-cuarentena`.
+
+### Pantalla de Angular
+
+El opcional con puntaje de la etapa 2: una pantalla que consume la API y
+muestra el listado con filtros por área, estado, categoría y prioridad.
+
+```bash
+MAI_ORIGENES_PERMITIDOS=http://localhost:4200 python -m mai.api   # terminal 1
+cd frontend && npm install && npm start                            # terminal 2
+```
+
+**Sin `MAI_ORIGENES_PERMITIDOS` el navegador bloquea las llamadas.** La API no
+autoriza ningún origen cruzado por defecto y **no acepta `*`**: un comodín
+permitiría que cualquier página abierta en el navegador del usuario la
+llamara. Detalles en [`frontend/README.md`](frontend/README.md).
+
+La pantalla **marca las clasificaciones degradadas**, con su motivo. No es
+decoración: una categoría puesta por la regla de reserva acierta menos que una
+del modelo, y tratar las dos igual es el error más probable al integrarse.
 
 ### Levantar la API
 
@@ -468,6 +487,7 @@ Lo que **no** quedó hecho, y por qué.
 |---|---|
 | Script de limpieza, SQL, pruebas, README | `src/mai/`, [`sql/consultas.sql`](sql/consultas.sql), `tests/` |
 | API propia con contrato | [`docs/api.md`](docs/api.md) · contrato generado en `/openapi.json` |
+| Pantalla en Angular *(opcional con puntaje)* | [`frontend/`](frontend/README.md) |
 | Módulo de IA desacoplado | [`ADR-004`](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md) · `src/mai/dominio/puertos.py` |
 | Defectos del legacy, rojo→verde | `legacy/legacy_module.py` · commits `8c7135d`→`ac5e48c`, `db7967d`→`b026ef4`, `bb7dcb9`→`41f75bd` |
 | RAG con citas y abstención | `src/mai/rag/`, [`ADR-001`](docs/adr/ADR-001-vectorizacion-e-indice.md), [`ADR-003`](docs/adr/ADR-003-fragmentacion.md) |
