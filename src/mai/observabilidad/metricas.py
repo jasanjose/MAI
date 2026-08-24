@@ -105,6 +105,7 @@ class ColectorDeMetricas:
         proveedor: str | None,
         tokens_entrada: int | None,
         tokens_salida: int | None,
+        tokens_razonamiento: int | None = None,
     ) -> None:
         """Una llamada al proveedor, con su consumo si lo reportó.
 
@@ -112,6 +113,12 @@ class ColectorDeMetricas:
         `llm.llamadas_sin_tokens`. Sumar ceros haría parecer que el sistema
         consume menos de lo que consume, que es justo la métrica que se usa
         para presupuestar.
+
+        `tokens_razonamiento` **no se suma al total**: ya viene dentro de
+        `tokens_salida`. Se acumula aparte porque es lo único que distingue un
+        modelo verboso de uno que razona de más, y solo el segundo se arregla
+        apagando un ajuste. Es opcional para que un proveedor que no informe el
+        desglose no obligue a cambiar a quien llama.
         """
         with self._cerrojo:
             self._contadores["llm.llamadas"] += 1
@@ -122,6 +129,8 @@ class ColectorDeMetricas:
                 return
             self._contadores["llm.tokens_entrada"] += tokens_entrada or 0
             self._contadores["llm.tokens_salida"] += tokens_salida or 0
+            if tokens_razonamiento:
+                self._contadores["llm.tokens_razonamiento"] += tokens_razonamiento
 
     # ── Lectura ─────────────────────────────────────────────────────────────
 
@@ -150,6 +159,10 @@ class ColectorDeMetricas:
                 "llamadas_sin_tokens_reportados": contadores.get("llm.llamadas_sin_tokens", 0),
                 "tokens_entrada": contadores.get("llm.tokens_entrada", 0),
                 "tokens_salida": contadores.get("llm.tokens_salida", 0),
+                # Subconjunto de tokens_salida, no un sumando aparte. Un valor
+                # alto aquí es accionable: se apaga el razonamiento y baja el
+                # costo sin tocar el modelo.
+                "tokens_razonamiento": contadores.get("llm.tokens_razonamiento", 0),
                 "por_proveedor": {
                     clave.removeprefix("llm.proveedor."): valor
                     for clave, valor in contadores.items()

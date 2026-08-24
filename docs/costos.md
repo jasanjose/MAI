@@ -132,9 +132,10 @@ montos nacionales.
   auténtica. Lo que no es cierto es que ese fragmento responda la pregunta.
 
 **Verificar que una cita existe no verifica que sea pertinente.** Ese es el
-límite del diseño actual, y ahora está medido en vez de supuesto. Cerrarlo
-pide una tercera comprobación —que el fragmento citado contenga el dato
-concreto que la pregunta busca— que no está construida.
+límite del diseño actual, y ahora está medido en vez de supuesto. Qué se
+consideró para cerrarlo —embeddings remotos, reranker, una tercera puerta de
+suficiencia—, por qué se descartó cada uno y qué se hizo en su lugar está en
+[ADR-006](adr/ADR-006-pertinencia-de-la-cita.md).
 
 Mientras tanto, la mitigación es de configuración y no de código: poner en
 `RUTA_RAG` un modelo que sí cumple. La suite lo verifica en cada ejecución y
