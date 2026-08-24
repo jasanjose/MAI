@@ -27,10 +27,10 @@ leen las credenciales queda en un solo lugar visible.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 
 from mai.adaptadores.llm.compatible import AdaptadorCompatible
-from mai.adaptadores.llm.enrutador import EnrutadorLLM
+from mai.adaptadores.llm.enrutador import EnrutadorLLM, Medidor
 from mai.adaptadores.llm.falso import AdaptadorFalso
 from mai.adaptadores.llm.perfiles import PERFILES, perfil_de
 from mai.dominio.puertos import ProveedorLLM
@@ -55,7 +55,7 @@ def construir_cadena(
     ruta: str,
     entorno: Mapping[str, str] | None = None,
     nombre: str = "cadena",
-    al_medir: Callable[[str, int | None, int | None], None] | None = None,
+    al_medir: Medidor | None = None,
 ) -> ProveedorLLM:
     """Arma la cadena descrita por `ruta`, una lista de nombres por comas.
 
@@ -82,7 +82,7 @@ def construir_cadena(
 
 def construir_para_clasificacion(
     entorno: Mapping[str, str] | None = None,
-    al_medir: Callable[[str, int | None, int | None], None] | None = None,
+    al_medir: Medidor | None = None,
 ) -> ProveedorLLM:
     """Cadena de la tarea de clasificar. Manda la latencia y el costo (R-01)."""
     entorno = os.environ if entorno is None else entorno
@@ -92,7 +92,7 @@ def construir_para_clasificacion(
 
 def construir_para_rag(
     entorno: Mapping[str, str] | None = None,
-    al_medir: Callable[[str, int | None, int | None], None] | None = None,
+    al_medir: Medidor | None = None,
 ) -> ProveedorLLM:
     """Cadena de la tarea de responder políticas. Manda la fidelidad (R-02)."""
     entorno = os.environ if entorno is None else entorno

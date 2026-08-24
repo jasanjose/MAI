@@ -162,6 +162,38 @@ def test_cuenta_las_llamadas_por_proveedor():
     assert c.resumen()["proveedor_llm"]["por_proveedor"] == {"groq": 1, "dashscope": 2}
 
 
+def test_los_tokens_de_razonamiento_se_acumulan_aparte_sin_sumarse_al_total():
+    """El desglose no es un sumando: ya viene dentro de `tokens_salida`.
+
+    Si se sumara, el total de salida saldría inflado y el costo calculado sobre
+    él sería falso. Se guarda aparte porque es lo único que distingue un modelo
+    verboso de uno que razona de más, y solo el segundo se arregla apagando un
+    ajuste.
+    """
+    c = ColectorDeMetricas()
+
+    c.registrar_llamada_llm("p", 100, 40, 30)
+    c.registrar_llamada_llm("p", 100, 40, 30)
+
+    llm = c.resumen()["proveedor_llm"]
+    assert llm["tokens_salida"] == 80
+    assert llm["tokens_razonamiento"] == 60
+
+
+def test_sin_desglose_el_razonamiento_queda_en_cero_y_la_llamada_si_se_cuenta():
+    """Un proveedor que no informa el desglose no debe verse como uno que no
+    razonó: la llamada cuenta y sus tokens también, y el desglose queda en cero
+    porque es una suma, no una afirmación sobre el modelo."""
+    c = ColectorDeMetricas()
+
+    c.registrar_llamada_llm("p", 100, 40)
+
+    llm = c.resumen()["proveedor_llm"]
+    assert llm["llamadas"] == 1
+    assert llm["tokens_salida"] == 40
+    assert llm["tokens_razonamiento"] == 0
+
+
 def test_el_costo_en_dinero_se_declara_ausente_y_no_se_inventa():
     """Exige el precio por millón de tokens de cada proveedor, que se consulta
     contra su documentación. Un costo inventado es peor que ninguno: se usaría

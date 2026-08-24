@@ -283,7 +283,10 @@ formal; clasificar mal cuesta un minuto de un analista.
 ### Observabilidad
 
 `GET /metricas` — latencias p50/p95/p99 por operación, tasa de degradación y
-de abstención **con su desglose por motivo**, y tokens por proveedor. El
+de abstención **con su desglose por motivo**, y tokens por proveedor,
+separando los que el modelo gastó razonando —que van dentro de los de salida,
+no aparte, y son lo único que distingue un modelo verboso de uno que razona de
+más—. El
 desglose es lo que hace accionable la tasa: un proveedor caído y un modelo
 que devuelve basura degradan igual y exigen acciones opuestas.
 
@@ -368,6 +371,7 @@ Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 | [`docs/adr/ADR-003`](docs/adr/ADR-003-fragmentacion.md) | Fragmentación por sección numerada |
 | [`docs/adr/ADR-004`](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md) | Desacoplamiento del proveedor y cadena de reserva |
 | [`docs/adr/ADR-005`](docs/adr/ADR-005-frontera-determinista-probabilistico.md) | Qué resuelve una regla, qué un modelo, y qué se queda sin resolver |
+| [`docs/adr/ADR-006`](docs/adr/ADR-006-pertinencia-de-la-cita.md) | Por qué una cita verificable no garantiza una respuesta correcta, y qué se hace con ese hueco |
 | [`docs/api.md`](docs/api.md) | Qué resuelve la API, para quién, y qué **no** hace |
 | [`docs/costos.md`](docs/costos.md) | Costo y latencia **medidos** contra proveedores reales, con el modelo recomendado |
 | [`docs/calibracion_umbral.md`](docs/calibracion_umbral.md) | Por qué el umbral es 0.20 y por qué ningún valor cumple el 100 % |
@@ -509,7 +513,7 @@ Lo que **no** quedó hecho, y por qué.
 | Observabilidad | `GET /metricas` · `src/mai/observabilidad/` |
 | Costo y latencia medidos | [`docs/costos.md`](docs/costos.md) |
 | Artefacto para el equipo | [`docs/guia_equipo.md`](docs/guia_equipo.md) |
-| Arquitectura y ADR | [`docs/arquitectura.md`](docs/arquitectura.md) · 5 ADR en `docs/adr/` |
+| Arquitectura y ADR | [`docs/arquitectura.md`](docs/arquitectura.md) · 6 ADR en `docs/adr/` |
 | Decisión R-01/R-02/R-03 | [`docs/decision_requerimientos.md`](docs/decision_requerimientos.md) |
 | Métricas previas y conjunto de referencia | [`docs/metricas.md`](docs/metricas.md) · [`conjunto_referencia.csv`](docs/conjunto_referencia.csv) |
 | Suite de evaluación que falla bajo umbral | `src/mai/evaluacion/` · `scripts/evaluar.py` |

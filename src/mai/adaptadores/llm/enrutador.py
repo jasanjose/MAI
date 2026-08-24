@@ -37,6 +37,12 @@ from mai.dominio.puertos import (
 
 logger = logging.getLogger(__name__)
 
+# Qué recibe el colector de métricas en cada llamada que sale bien: proveedor,
+# tokens de entrada, de salida, y cuántos de los de salida fueron razonamiento.
+# Se declara aquí, donde se invoca, y no en el módulo de métricas: el enrutador
+# no debe depender de la observabilidad, sino al revés.
+Medidor = Callable[[str, int | None, int | None, int | None], None]
+
 
 class EnrutadorLLM(ProveedorLLM):
     """Prueba los proveedores en orden y devuelve la primera respuesta buena.
@@ -50,9 +56,9 @@ class EnrutadorLLM(ProveedorLLM):
         self,
         proveedores: Sequence[ProveedorLLM],
         nombre: str = "cadena",
-        al_medir: Callable[[str, int | None, int | None], None] | None = None,
+        al_medir: Medidor | None = None,
     ) -> None:
-        """`al_medir` recibe proveedor, tokens de entrada y tokens de salida.
+        """`al_medir` recibe proveedor y el desglose de tokens de la llamada.
 
         La medición se recolecta aquí y no en cada adaptador porque **toda
         llamada pasa por la cadena**: un solo punto, y los adaptadores no
@@ -101,7 +107,10 @@ class EnrutadorLLM(ProveedorLLM):
             else:
                 if self._al_medir is not None:
                     self._al_medir(
-                        respuesta.proveedor, respuesta.tokens_entrada, respuesta.tokens_salida
+                        respuesta.proveedor,
+                        respuesta.tokens_entrada,
+                        respuesta.tokens_salida,
+                        respuesta.tokens_razonamiento,
                     )
                 return respuesta
 
