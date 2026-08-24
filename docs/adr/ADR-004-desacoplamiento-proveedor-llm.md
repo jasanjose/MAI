@@ -123,7 +123,37 @@ registro.
 
 ---
 
+### Addendum · dónde vive lo que NO es común (24 de agosto)
+
+«Un adaptador para cinco proveedores» se sostiene, pero **el mismo protocolo no
+es la misma petición**: hay ajustes que cada proveedor nombra a su manera, y el
+nombre que no le corresponde **se ignora en silencio** — la petición responde
+bien, tarde y cara, sin ninguna señal de error.
+
+Ese conocimiento no cabe en el adaptador sin volverlo específico, que es lo que
+este ADR existe para evitar. Vive en
+[`adaptadores/llm/perfiles.py`](../../src/mai/adaptadores/llm/perfiles.py): una
+tabla de `nombre → (prefijo de entorno, ajustes de petición)` que absorbe el
+diccionario de proveedores que ya tenía la fábrica. **Añadir un proveedor sigue
+siendo una línea**, y el criterio de aceptación no cambia: cambiar de modelo es
+cambiar una variable de entorno.
+
+`AdaptadorCompatible` gana un `cuerpo_extra` opcional. Con él ausente la
+petición sale idéntica a la de antes, y hay una prueba que lo fija.
+
+**Cómo se verifica que el ajuste llegó: por el efecto, nunca por el campo.**
+Comprobar que la petición lleva la clave correcta da verde con la versión rota,
+porque el problema no es enviarla — es que el proveedor no la mire. La prueba
+mira la respuesta: `tokens_razonamiento == 0`.
+
+---
+
 ## Consecuencias negativas aceptadas
+
+- **La tabla de perfiles es conocimiento que caduca.** El día que un proveedor
+  renombre un ajuste, el sistema vuelve a estar en silencio hasta que alguien lo
+  mida. Por eso la comprobación es por efecto y no por campo — pero eso detecta,
+  no previene.
 
 - **Anthropic no es utilizable directamente**, aunque haya credencial
   disponible. Se renuncia a un modelo de buena calidad por no pagar un

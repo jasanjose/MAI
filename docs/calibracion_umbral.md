@@ -108,17 +108,54 @@ verificación de cita descarte la respuesta si no lo hace. Por eso
 primero en `RUTA_RAG`: lo que se rompe en abstención es la complacencia del
 modelo.
 
-## 6. Lo que esto NO demuestra
+## 6. Medido después, contra proveedores reales
 
-**La abstención del 100 % no está verificada de extremo a extremo.** Está
-verificada la puerta 1 con datos reales, y la puerta 2 con pruebas contra un
-proveedor simulado —responde sin citar, cita algo que no recibió, se cae—.
-Lo que falta es medir los cuatro casos restantes contra un modelo real.
+> Esta sección se añade el 24 de agosto. La versión anterior decía que la
+> abstención del 100 % no estaba verificada de extremo a extremo, y listaba
+> «se conecta un proveedor real» como la condición que obligaría a rehacer la
+> medición. Se conectó, así que se rehízo.
 
-Mientras eso no se haga, la afirmación honesta es: *el sistema abstiene
-correctamente en 2 de 6 casos por recuperación, y los otros 4 dependen de un
-comportamiento del modelo que está diseñado y probado en simulación, pero no
-medido en producción.*
+**La conclusión de este documento se sostiene, y se afina.**
+
+Sigue siendo cierto que el umbral solo no puede cumplir el 100 %: es el límite
+de la recuperación léxica y ningún valor lo salva. Lo que la medición añade es
+de quién depende el resto:
+
+| Modelo en `RUTA_RAG` | Abstención sobre los 6 sin respaldo |
+|---|---:|
+| DeepSeek Flash *(instantánea posterior)* | **100 %** ✅ |
+| DeepSeek Flash | 83 % ❌ |
+| Qwen Flash | 83 % ❌ |
+
+**La segunda puerta cumple, pero solo con algunos modelos.** Eso convierte la
+elección del modelo de RAG en una decisión de seguridad, no de rendimiento — y
+es la razón medida, ya no solo de diseño, de que `RUTA_CLASIFICACION` y
+`RUTA_RAG` sean cadenas separadas: el modelo que gana en clasificación no es el
+que cumple aquí.
+
+### El caso que ninguna puerta atrapa
+
+Es el mismo que este documento ya señalaba: la pregunta por el viático de una
+ciudad extranjera, que puntúa 0.411 y supera a 18 de las 21 consultas legítimas.
+
+Lo que no estaba previsto es **por qué la segunda puerta tampoco lo ve**: el
+modelo **cita de verdad** un fragmento que se le entregó. La cita es auténtica y
+verificable contra lo recuperado. Lo que no es cierto es que ese fragmento
+responda la pregunta.
+
+**Verificar que una cita existe no verifica que sea pertinente.** El análisis
+completo, con las cuatro alternativas descartadas, está en
+[ADR-006](adr/ADR-006-pertinencia-de-la-cita.md).
+
+## 6 bis. Lo que sigue sin demostrarse
+
+- **Una sola pasada por caso.** Seis casos sin respaldo y N=1: la diferencia
+  entre 83 % y 100 % es un caso, y no basta para afirmar que un modelo abstiene
+  mejor *en general*. Basta, en cambio, para lo que aquí importa: **con esos dos
+  modelos el sistema incumple una condición dura**, y eso es un hecho verificado.
+- **Un corpus de cinco documentos.** Con más documentos hay más fragmentos
+  tópicamente cercanos sin el dato pedido: el hueco se ensancha con el tamaño
+  del corpus, no se estrecha.
 
 ## 7. Bajo qué condición se revisaría
 
