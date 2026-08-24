@@ -60,13 +60,27 @@ defecto S2 sigue presente, y nunca llega a `pytest`.
 ```
 X Auditoria de secretos y frontera de git
     Credenciales en archivos versionados:
-    tests/test_llm_compatible.py:38:        api_key="clave-de-prueba",
+    tests/test_llm_compatible.py:38
 ```
 
+En esa línea, el parámetro `api_key` recibía directamente un literal
+entrecomillado de quince caracteres —un relleno de prueba, sin ningún valor—.
 Lo introdujo `CI #12`, el commit que añadió las pruebas del adaptador de
-proveedores. El patrón `api[_-]?key[[:space:]]*=[[:space:]]*["'][^"']{8,}`
-coincide con esa línea — **y hace bien**: ninguna herramienta puede
-distinguir un relleno de prueba de una credencial real.
+proveedores. El patrón de credenciales coincide con esa forma, **y hace
+bien**: ninguna herramienta puede distinguir un relleno de prueba de una
+credencial real.
+
+> **Nótese que esta página no reproduce la línea.** La primera versión de este
+> documento la citaba textualmente, y **el post mortem que explica el falso
+> positivo disparó el mismo falso positivo** — `CI #52`, rojo, señalando este
+> archivo.
+>
+> No es una anécdota: es un costo operativo real de cualquier detector de
+> secretos. Documentar un incidente exige escribir la forma que lo causó, y
+> escribirla vuelve a activar la alarma. Quien mantenga esto tiene que
+> saberlo, porque la salida cómoda —excluir `docs/` del análisis— dejaría sin
+> vigilar justo los archivos donde alguien pega una clave «solo para el
+> ejemplo».
 
 ### Por qué no se corrigió relajando el detector
 
