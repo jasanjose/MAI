@@ -31,7 +31,7 @@ Se usó además el propio repositorio como herramienta de verificación: `ruff`,
 - **El adaptador `compatible`** para proveedores que hablan Chat Completions.
   Un archivo para cinco proveedores; se conservó sin cambios porque la forma
   del protocolo no admite variantes interesantes.
-- **El grueso de las 450 pruebas.** Los nombres describen comportamiento y
+- **El grueso de las 501 pruebas.** Los nombres describen comportamiento y
   las docstrings explican por qué existe cada caso de borde; eso se revisó,
   no se aceptó a ciegas.
 - **El flujo de integración continua**, que corrió en verde a la primera.

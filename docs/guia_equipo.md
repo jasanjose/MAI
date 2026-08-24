@@ -76,7 +76,7 @@ Diez cosas. Es la lista de `CLAUDE.md` §5.4 con lo que este proyecto añadió.
 
 ### 1 · Ejecutar la aplicación, no solo la suite
 
-Encontró **tres defectos que 470 pruebas en verde no vieron**. El de las
+Encontró **tres defectos que la suite en verde no vio**. El de las
 tildes salió a la primera petición real; los otros dos eran huecos de
 diagnóstico en la sonda de salud.
 
