@@ -26,7 +26,7 @@ decide qué significa degradarse.
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from mai.dominio.puertos import (
     CadenaAgotada,
@@ -46,7 +46,19 @@ class EnrutadorLLM(ProveedorLLM):
     fidelidad (ADR-004 §3).
     """
 
-    def __init__(self, proveedores: Sequence[ProveedorLLM], nombre: str = "cadena") -> None:
+    def __init__(
+        self,
+        proveedores: Sequence[ProveedorLLM],
+        nombre: str = "cadena",
+        al_medir: Callable[[str, int | None, int | None], None] | None = None,
+    ) -> None:
+        """`al_medir` recibe proveedor, tokens de entrada y tokens de salida.
+
+        La medición se recolecta aquí y no en cada adaptador porque **toda
+        llamada pasa por la cadena**: un solo punto, y los adaptadores no
+        tienen que conocer al colector. Es una función y no un objeto de
+        métricas para que el adaptador no dependa de ese tipo.
+        """
         if not proveedores:
             raise ValueError(
                 "Una cadena de proveedores no puede estar vacía. Revise "
@@ -54,6 +66,7 @@ class EnrutadorLLM(ProveedorLLM):
             )
         self._proveedores = list(proveedores)
         self._nombre = nombre
+        self._al_medir = al_medir
 
     @property
     def nombre(self) -> str:
@@ -70,7 +83,7 @@ class EnrutadorLLM(ProveedorLLM):
 
         for posicion, proveedor in enumerate(self._proveedores, start=1):
             try:
-                return proveedor.completar(instruccion, entrada)
+                respuesta = proveedor.completar(instruccion, entrada)
             except ErrorProveedorLLM as error:
                 motivos.append(f"{proveedor.nombre}: {error}")
                 # Se registra cada caída con su posición, no solo la última.
@@ -85,6 +98,12 @@ class EnrutadorLLM(ProveedorLLM):
                         "quedan_alternativas": posicion < len(self._proveedores),
                     },
                 )
+            else:
+                if self._al_medir is not None:
+                    self._al_medir(
+                        respuesta.proveedor, respuesta.tokens_entrada, respuesta.tokens_salida
+                    )
+                return respuesta
 
         logger.error(
             "cadena_llm_agotada",

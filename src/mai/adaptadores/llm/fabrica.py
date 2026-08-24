@@ -27,7 +27,7 @@ leen las credenciales queda en un solo lugar visible.
 from __future__ import annotations
 
 import os
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 
 from mai.adaptadores.llm.compatible import AdaptadorCompatible
 from mai.adaptadores.llm.enrutador import EnrutadorLLM
@@ -60,6 +60,7 @@ def construir_cadena(
     ruta: str,
     entorno: Mapping[str, str] | None = None,
     nombre: str = "cadena",
+    al_medir: Callable[[str, int | None, int | None], None] | None = None,
 ) -> ProveedorLLM:
     """Arma la cadena descrita por `ruta`, una lista de nombres por comas.
 
@@ -79,21 +80,29 @@ def construir_cadena(
             f"por ejemplo «{NOMBRE_FALSO}» para correr sin red."
         )
 
-    return EnrutadorLLM([_construir_uno(n, entorno) for n in nombres], nombre=nombre)
+    return EnrutadorLLM(
+        [_construir_uno(n, entorno) for n in nombres], nombre=nombre, al_medir=al_medir
+    )
 
 
-def construir_para_clasificacion(entorno: Mapping[str, str] | None = None) -> ProveedorLLM:
+def construir_para_clasificacion(
+    entorno: Mapping[str, str] | None = None,
+    al_medir: Callable[[str, int | None, int | None], None] | None = None,
+) -> ProveedorLLM:
     """Cadena de la tarea de clasificar. Manda la latencia y el costo (R-01)."""
     entorno = os.environ if entorno is None else entorno
     ruta = entorno.get(VARIABLE_RUTA_CLASIFICACION, RUTA_POR_DEFECTO)
-    return construir_cadena(ruta, entorno, nombre="clasificacion")
+    return construir_cadena(ruta, entorno, nombre="clasificacion", al_medir=al_medir)
 
 
-def construir_para_rag(entorno: Mapping[str, str] | None = None) -> ProveedorLLM:
+def construir_para_rag(
+    entorno: Mapping[str, str] | None = None,
+    al_medir: Callable[[str, int | None, int | None], None] | None = None,
+) -> ProveedorLLM:
     """Cadena de la tarea de responder políticas. Manda la fidelidad (R-02)."""
     entorno = os.environ if entorno is None else entorno
     ruta = entorno.get(VARIABLE_RUTA_RAG, RUTA_POR_DEFECTO)
-    return construir_cadena(ruta, entorno, nombre="rag")
+    return construir_cadena(ruta, entorno, nombre="rag", al_medir=al_medir)
 
 
 # ── Interno ─────────────────────────────────────────────────────────────────

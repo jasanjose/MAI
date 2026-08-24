@@ -13,8 +13,8 @@ escala a una persona lo que no puede resolver.
 |---|---|---|
 | 1 · Fundamentos | ✅ **completa** | `src/mai/`, `sql/`, `tests/` |
 | 2 · Autonomía e integración | ✅ **completa** | `src/mai/api/`, `src/mai/adaptadores/llm/`, `legacy/` |
-| 3 · Complejidad y calidad | 🚧 parcial | `.github/workflows/ci.yml` — solo la integración continua |
-| 4 · Arquitectura | 🚧 parcial | `docs/adr/` (3 de los ADR ya escritos) |
+| 3 · Complejidad y calidad | ✅ **completa** | `src/mai/rag/`, `docs/informe_seguridad.md`, `docs/guia_equipo.md` |
+| 4 · Arquitectura | 🚧 parcial | `docs/adr/` (5 ADR escritos) |
 | 5 · Estrategia | 🚧 parcial | `docs/metricas.md`, `docs/conjunto_referencia.csv` |
 
 **Lo que quedó fuera está declarado en la sección «Límites», al final.** No
@@ -81,7 +81,7 @@ publica en `/openapi.json`, con navegador en `/docs`.
 ### Pruebas
 
 ```bash
-pytest          # 367 pruebas, sin red y sin credenciales
+pytest          # 470 pruebas, sin red y sin credenciales
 ruff check .
 bandit -r src/
 ```
@@ -176,7 +176,7 @@ proveedor concreto. Cambiar de modelo es cambiar `RUTA_CLASIFICACION` o
 
 | Adaptador | Para qué |
 |---|---|
-| `falso` | Determinista, sin red. Es lo que hace que las 367 pruebas corran en integración continua sin credenciales |
+| `falso` | Determinista, sin red. Es lo que hace que las 470 pruebas corran en integración continua sin credenciales |
 | `compatible` | Un archivo para **cinco proveedores** — Groq, DashScope, OpenAI, OpenRouter y Ollama hablan todos Chat Completions |
 | `enrutador` | Cadena con reserva. **Implementa el mismo puerto**, así que el dominio no distingue un proveedor de una cadena de cinco |
 
@@ -204,6 +204,40 @@ reportados, cada uno con su prueba en rojo antes del arreglo.
 
 El cambio total al módulo son **tres líneas de lógica**: se corrigió lo que
 estaba mal, no se reescribió.
+
+### Consulta de políticas con citas y abstención
+
+`POST /consultas` responde en lenguaje natural **citando documento y
+sección**, o declara que no tiene evidencia. Los cinco PDF se fragmentan por
+sección numerada, de modo que la cita —`POL-GTH-01 §3.1`— sale de la
+estructura del documento y quien la lea puede comprobarla.
+
+**Dos puertas, y ninguna sobra:**
+
+| | Qué descarta |
+|---|---|
+| **Umbral de similitud** | Lo que no se parece a nada del corpus. Se abstiene **sin llamar al modelo** |
+| **Verificación de cita** | Lo que se parece pero no responde: si el modelo no cita, o cita algo que no recibió, la respuesta se descarta |
+
+La segunda no es un refuerzo: es **portante**. La calibración
+([`docs/calibracion_umbral.md`](docs/calibracion_umbral.md)) demostró que
+ningún umbral cumple la abstención del 100 % —una pregunta sobre viáticos a
+Ciudad de México puntúa más alto que 18 de las 21 consultas legítimas— y que
+BM25 tampoco lo resuelve.
+
+Sin proveedor, este componente **se abstiene**; no cae a reglas, a diferencia
+de la clasificación. Responder mal sobre un plazo cuesta una reclamación
+formal; clasificar mal cuesta un minuto de un analista.
+
+### Observabilidad
+
+`GET /metricas` — latencias p50/p95/p99 por operación, tasa de degradación y
+de abstención **con su desglose por motivo**, y tokens por proveedor. El
+desglose es lo que hace accionable la tasa: un proveedor caído y un modelo
+que devuelve basura degradan igual y exigen acciones opuestas.
+
+Registro estructurado en JSON con `id_traza` propagado extremo a extremo, sin
+datos personales ni contenido de tickets.
 
 ### Consultas SQL
 
@@ -275,10 +309,17 @@ Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 | [`docs/metricas.md`](docs/metricas.md) | Precisión objetivo, latencia p95 y umbrales — **definidos antes de implementar** |
 | [`docs/conjunto_referencia.csv`](docs/conjunto_referencia.csv) | 58 casos etiquetados a mano, con 21 citas verificadas contra los PDF |
 | [`docs/decisiones.md`](docs/decisiones.md) | Alta de dependencias, con lo descartado y su costo |
+| [`docs/adr/ADR-001`](docs/adr/ADR-001-vectorizacion-e-indice.md) | Vectorización, índice y métrica de similitud |
 | [`docs/adr/ADR-002`](docs/adr/ADR-002-orquestacion.md) | Orquestación propia, sin n8n ni framework de agentes |
+| [`docs/adr/ADR-003`](docs/adr/ADR-003-fragmentacion.md) | Fragmentación por sección numerada |
 | [`docs/adr/ADR-004`](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md) | Desacoplamiento del proveedor y cadena de reserva |
 | [`docs/adr/ADR-005`](docs/adr/ADR-005-frontera-determinista-probabilistico.md) | Qué resuelve una regla, qué un modelo, y qué se queda sin resolver |
 | [`docs/api.md`](docs/api.md) | Qué resuelve la API, para quién, y qué **no** hace |
+| [`docs/calibracion_umbral.md`](docs/calibracion_umbral.md) | Por qué el umbral es 0.20 y por qué ningún valor cumple el 100 % |
+| [`docs/informe_seguridad.md`](docs/informe_seguridad.md) | Siete hallazgos con su corrección, y cinco riesgos abiertos |
+| [`docs/guia_equipo.md`](docs/guia_equipo.md) | Cómo revisar código generado por IA, con los incidentes de este proyecto |
+| [`docs/revision_pr.md`](docs/revision_pr.md) | Revisión del cambio entregado: 14 hallazgos, 3 críticos |
+| [`docs/declaracion_uso_ia.md`](docs/declaracion_uso_ia.md) | Las cinco preguntas, respondidas con lo que pasó |
 
 ---
 
@@ -337,10 +378,33 @@ Lo que **no** quedó hecho, y por qué.
   corridas con 64 hilos, y a través del cliente de pruebas no se manifiesta
   nunca. El cerrojo está por el argumento, no por la prueba.
 
+**De la etapa 3:**
+
+- **Ningún proveedor de lenguaje real se ha ejercitado.** Todo está probado
+  contra transporte simulado. Con el adaptador falso, toda consulta de
+  política se abstiene en la verificación de cita — que es el comportamiento
+  correcto, porque ese adaptador no cita.
+- **La abstención del 100 % no está verificada de extremo a extremo.** La
+  primera puerta sí, con datos reales: descarta 2 de 6 casos sin respaldo.
+  Los otros 4 dependen de que un modelo real diga «no tengo evidencia», y eso
+  no se ha medido.
+- **TF-IDF no reconoce sinonimia.** Medido: «¿qué pasa si pierdo el
+  computador?» no recupera su respuesta, que dice «Pérdida, hurto o daño» y
+  nunca nombra el aparato. El vectorizador remoto implementa el mismo puerto
+  y resolvería esto, pero no se ha conectado.
+- **El corpus de políticas no se valida al ingerir.** Un PDF con
+  instrucciones embebidas entraría al índice y de ahí al prompt.
+- **Las pantallas de Actions de la ejecución fallida no se capturaron.** La
+  cuenta de `gh` de la máquina no tiene acceso al repositorio privado. La
+  evidencia en [`docs/integracion_continua.md`](docs/integracion_continua.md)
+  es la reproducción local de los mismos comandos.
+- **El costo en dinero no se estima**, solo se miden tokens y latencia. El
+  precio por millón se verifica contra cada proveedor, no se pone de memoria.
+
 **Del proyecto:**
 
 - **No se recibió la credencial del proveedor de IA prevista.** Se usan
   proveedores propios (Groq, DashScope, OpenAI) o un modelo local, y el
   criterio de la elección está declarado en
   [ADR-004](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md).
-- **Etapas 3 a 5 en curso.** Este README se actualiza al cerrar cada una.
+- **Etapas 4 y 5 en curso.** Este README se actualiza al cerrar cada una.

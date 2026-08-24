@@ -4,8 +4,9 @@
 **Decide:** cómo se abstrae el proveedor de lenguaje, cómo se conmuta entre
 proveedores y qué hace el sistema cuando ninguno responde.
 
-> Los ADR 001 y 003 (base vectorial · estrategia de fragmentación) quedan
-> reservados y se escriben al construir el componente RAG.
+> Los ADR [001](ADR-001-vectorizacion-e-indice.md) (vectorización, índice y
+> métrica) y [003](ADR-003-fragmentacion.md) (fragmentación) se escribieron al
+> construir el componente RAG.
 
 ---
 

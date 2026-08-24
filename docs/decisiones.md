@@ -150,6 +150,36 @@ es `sqlite3` sobre el esquema entregado.
 
 ---
 
+## D-006 · Extracción de texto de PDF → `pypdf`
+
+**Qué problema resuelve.** Las cinco políticas llegan en PDF y hay que
+convertirlas a texto para fragmentarlas y consultarlas.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **`pypdf`** | Python puro: `pip install` y ya. Sin binarios del sistema, así que la integración continua no necesita nada más. Extrae estos documentos completos y conserva los saltos de línea que separan las secciones | Una dependencia de ejecución más |
+| `pdftotext` por subproceso | Respeta mejor el diseño de columnas, y está instalado en la máquina de desarrollo | Es un binario del sistema (`poppler`). CI tendría que instalarlo aparte: cambia el problema de sitio en vez de resolverlo, y añade un punto de fallo que no se ve en el `pyproject.toml` |
+| `pdfminer.six` | Control fino del diseño | Bastante más pesado, y aquí no hay ningún diseño complejo que justificarlo |
+| Escribir el extractor | Cero dependencias | Un extractor de PDF no cabe en treinta líneas comprensibles. Es exactamente el caso donde la biblioteca estándar no alcanza |
+
+**Por qué esta.** Se verificó antes de aprobarla, no después: `pypdf` extrae
+los cinco documentos completos y las secciones numeradas quedan al inicio de
+línea, que es lo único que la fragmentación necesita.
+
+**Un detalle que solo aparece al probar:** ReportLab —el generador de estos
+PDF— representa la viñeta de las subsecciones con el carácter de control
+`\x7f` (DEL). Una expresión regular que busque `•` no encuentra ni una
+subsección. La extracción normaliza los caracteres de control a espacio antes
+de analizar.
+
+**Qué costo se acepta.** Una dependencia de ejecución. `pypdf` no conserva la
+estructura de las tablas: la de montos de viáticos y la de tiempos de
+atención quedan como texto corrido. Para responder «cuánto reconocen de
+hospedaje» eso alcanza, porque las cifras y sus etiquetas siguen juntas en la
+misma línea; para un documento con tablas de verdad complejas no alcanzaría.
+
+---
+
 ## Decisiones pendientes
 
 Analizadas, sin aprobar todavía. Ninguna se usa hasta que se decida.
@@ -174,7 +204,7 @@ Aquí la biblioteca estándar sí resuelve, pero **no en menos de treinta línea
 comprensibles**: el manejo de errores de `urllib` es justamente donde se
 esconden los defectos.
 
-### P-002 · Extracción de texto de PDF *(etapa 3)*
+### P-002 · Extracción de texto de PDF *(etapa 3)* — **resuelta, ver D-006**
 ### P-003 · Modelo de embeddings y base vectorial *(etapa 3 — va a ADR-001)*
 ### P-004 · API propia *(etapa 2)* — **resuelta, ver D-004**
 ### P-005 · Modelo clásico y matriz de confusión *(etapa 5)*
