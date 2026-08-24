@@ -46,7 +46,7 @@ Tres cosas que este proyecto midió y que cambian cómo se lee el resto:
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-pytest          # 501 pruebas, sin red ni credenciales
+pytest          # 519 pruebas, sin red ni credenciales
 ruff check .
 bandit -r src/
 ```
@@ -132,7 +132,7 @@ publica en `/openapi.json`, con navegador en `/docs`.
 ### Pruebas
 
 ```bash
-pytest          # 501 pruebas, sin red y sin credenciales
+pytest          # 519 pruebas, sin red y sin credenciales
 ruff check .
 bandit -r src/
 ```
@@ -227,7 +227,7 @@ proveedor concreto. Cambiar de modelo es cambiar `RUTA_CLASIFICACION` o
 
 | Adaptador | Para qué |
 |---|---|
-| `falso` | Determinista, sin red. Es lo que hace que las 501 pruebas corran en integración continua sin credenciales |
+| `falso` | Determinista, sin red. Es lo que hace que las 519 pruebas corran en integración continua sin credenciales |
 | `compatible` | Un archivo para **cinco proveedores** — Groq, DashScope, OpenAI, OpenRouter y Ollama hablan todos Chat Completions |
 | `enrutador` | Cadena con reserva. **Implementa el mismo puerto**, así que el dominio no distingue un proveedor de una cadena de cinco |
 
