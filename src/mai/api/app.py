@@ -14,6 +14,7 @@ adaptador falso; producción la construye desde el entorno.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, Query, Request, Response, status
@@ -52,6 +53,7 @@ from mai.dominio.solicitudes import (
     RepositorioSolicitudes,
     ServicioSolicitudes,
 )
+from mai.observabilidad.metricas import ColectorDeMetricas
 from mai.observabilidad.traza import (
     CABECERA_TRAZA,
     fijar_id_traza,
@@ -95,7 +97,14 @@ def crear_app(
     """
     app = FastAPI(title=TITULO, version=VERSION, description=DESCRIPCION)
 
-    proveedor = proveedor if proveedor is not None else construir_para_clasificacion()
+    colector = ColectorDeMetricas()
+    app.state.metricas = colector
+
+    proveedor = (
+        proveedor
+        if proveedor is not None
+        else construir_para_clasificacion(al_medir=colector.registrar_llamada_llm)
+    )
     repositorio = repositorio if repositorio is not None else RepositorioEnMemoria()
     servicio = ServicioSolicitudes(repositorio, Clasificador(proveedor))
 
@@ -109,7 +118,11 @@ def crear_app(
     # políticas tienen restricciones opuestas (ADR-004 §3). Si no se inyecta
     # una, se arma desde RUTA_RAG.
     recuperador = recuperador if recuperador is not None else construir_recuperador()
-    proveedor_de_rag = proveedor_rag if proveedor_rag is not None else construir_para_rag()
+    proveedor_de_rag = (
+        proveedor_rag
+        if proveedor_rag is not None
+        else construir_para_rag(al_medir=colector.registrar_llamada_llm)
+    )
     app.state.recuperador = recuperador
     app.state.proveedor_rag = proveedor_de_rag
     app.state.politicas = ServicioDePoliticas(recuperador, proveedor_de_rag)
@@ -142,13 +155,23 @@ def _registrar_traza(app: FastAPI) -> None:
         cuando el identificador hace falta.
         """
         fijar_id_traza(normalizar_id_traza(peticion.headers.get(CABECERA_TRAZA)))
+        inicio = time.monotonic()
         respuesta: Response = await siguiente(peticion)
+        # Se mide la ruta declarada («/solicitudes/{codigo}»), no la concreta:
+        # agrupar por plantilla da una distribución por operación. Agrupar por
+        # URL literal daría una serie de un solo dato por cada código.
+        plantilla = getattr(peticion.scope.get("route"), "path", peticion.url.path)
+        peticion.app.state.metricas.registrar_operacion(
+            f"{peticion.method} {plantilla}", round((time.monotonic() - inicio) * 1000, 2)
+        )
         respuesta.headers[CABECERA_TRAZA] = id_traza_actual()
         return respuesta
 
 
-def _registrar_y_devolver(creada) -> SolicitudCreada:
+def _registrar_y_devolver(creada, metricas=None) -> SolicitudCreada:
     """Registra la creación y traduce al esquema de salida."""
+    if metricas is not None:
+        metricas.registrar_clasificacion(creada.origen_clasificacion, creada.motivo_degradacion)
     logger.info(
         "solicitud_creada",
         extra={
@@ -185,6 +208,20 @@ def _registrar_rutas(app: FastAPI) -> None:
             fragmentos_indexados=len(recuperador) if hasattr(recuperador, "__len__") else 0,
         )
 
+    @app.get("/metricas", tags=["operación"], summary="Métricas agregadas")
+    async def metricas(peticion: Request) -> dict:
+        """Latencias por operación, tasas de degradación y abstención, tokens.
+
+        No lleva `response_model` a propósito: la forma depende de qué
+        operaciones se hayan ejercitado, y fijarla en un esquema obligaría a
+        cambiarlo cada vez que se añade una ruta.
+
+        Las latencias se calculan sobre las últimas mil muestras de cada
+        operación, no sobre toda la vida del proceso: un p95 histórico tarda
+        días en reflejar que el sistema se degradó hace una hora.
+        """
+        return peticion.app.state.metricas.resumen()
+
     @app.post(
         "/consultas",
         response_model=RespuestaDeConsulta,
@@ -192,7 +229,7 @@ def _registrar_rutas(app: FastAPI) -> None:
         summary="Consulta las políticas internas en lenguaje natural",
     )
     async def consultar(
-        cuerpo: ConsultaDePolitica, politicas: PoliticasInyectado
+        cuerpo: ConsultaDePolitica, politicas: PoliticasInyectado, peticion: Request
     ) -> RespuestaDeConsulta:
         """Responde citando documento y sección, o declara que no tiene evidencia.
 
@@ -206,6 +243,7 @@ def _registrar_rutas(app: FastAPI) -> None:
         la respuesta se descarta y se devuelve la abstención con su motivo.
         """
         respuesta = politicas.consultar(cuerpo.pregunta)
+        peticion.app.state.metricas.registrar_consulta(respuesta.origen, respuesta.motivo)
         logger.info(
             "consulta_de_politica",
             extra={
@@ -262,8 +300,10 @@ def _registrar_rutas(app: FastAPI) -> None:
         }
         clave = normalizar_clave(idempotency_key)
 
+        metricas = peticion.app.state.metricas
+
         if clave is None:
-            return _registrar_y_devolver(servicio.crear(**datos))
+            return _registrar_y_devolver(servicio.crear(**datos), metricas)
 
         registro: RegistroDeIdempotencia = peticion.app.state.idempotencia
         reserva = registro.reservar(clave, calcular_huella(datos))
@@ -299,7 +339,7 @@ def _registrar_rutas(app: FastAPI) -> None:
             raise
 
         registro.completar(clave, creada.codigo)
-        return _registrar_y_devolver(creada)
+        return _registrar_y_devolver(creada, metricas)
 
     @app.get(
         "/solicitudes/{codigo}",
