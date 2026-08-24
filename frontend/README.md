@@ -23,8 +23,32 @@ npm install
 npm start          # http://localhost:4200
 ```
 
-Si la API corre en otro puerto, se cambia sin recompilar: `window.MAI_API` se
-define en `src/index.html` y se resuelve en tiempo de ejecución.
+### Si el puerto 8000 está ocupado
+
+Pasa, y entonces las instrucciones de arriba no llevan a ninguna parte. La API
+se levanta donde haya sitio y la pantalla se entera **una sola vez**:
+
+```bash
+python -m uvicorn mai.api.main:app --port 8010     # o el que esté libre
+```
+
+```js
+// en la consola del navegador. Sobrevive a la recarga.
+localStorage.MAI_API = 'http://127.0.0.1:8010'; location.reload();
+```
+
+**No sirve `window.MAI_API = …; location.reload()`**: la recarga destruye la
+variable antes de que la aplicación la lea, y sin recargar el cliente ya
+resolvió su dirección. Es un error fácil de cometer y difícil de ver.
+
+La dirección se resuelve en tres pasos —`window.MAI_API`, que inyecta
+`index.html` al desplegar; `localStorage`, para desarrollo; y el valor por
+defecto— y siempre en tiempo de ejecución, nunca al compilar: recompilar para
+cambiar una URL es lo que produce «funciona en mi máquina».
+
+**No se acepta la dirección desde la barra del navegador.** Un `?api=…` sería
+más cómodo y permitiría que un enlace de un tercero apuntara la pantalla a un
+servidor que no es el suyo.
 
 ## Qué hay que saber
 
