@@ -21,11 +21,22 @@ pasada por caso.
 | Modelo | Exactitud | p50 | p95 | USD/mes | USD/1k solicitudes |
 |---|---:|---:|---:|---:|---:|
 | **DeepSeek Flash** | **96,5 %** (28/29) | 516 ms | 733 ms | **5,20** | **0,0578** |
+| Gemini Flash | **96,5 %** (28/29) | 1.800 ms | 2.882 ms | 20,34 | 0,2260 |
 | Qwen Flash | 93,1 % (27/29) | **297 ms** | **438 ms** | 7,59 | 0,0844 |
 
 **Recomendación: DeepSeek Flash.** Es a la vez el más exacto y el más barato.
-Qwen Flash es 1,7× más rápido, pero acierta menos y cuesta un 46 % más, porque
-su token de salida vale casi cuatro veces lo que el del otro.
+
+Los tres entran bajo el umbral de p95 ≤ 5 s que [`metricas.md`](metricas.md) §3
+fijó **antes** de construir. Con ese margen la latencia deja de decidir, y lo
+que queda es exactitud y precio.
+
+**Dos modelos empatan en exactitud —28 de 29— y uno cuesta 3,9 veces lo que el
+otro.** Gemini Flash consume incluso menos tokens de entrada por llamada, 232
+contra 258; toda la diferencia de coste está en el precio por millón. Es el
+resultado más útil de esta tabla: **el modelo más caro no acierta más.**
+
+Qwen Flash es 1,7× más rápido que DeepSeek, pero acierta menos y cuesta un 46 %
+más, porque su token de salida vale casi cuatro veces.
 
 ### Las dos tareas juntas
 
@@ -33,6 +44,10 @@ su token de salida vale casi cuatro veces lo que el del otro.
 |---|---:|---:|---:|
 | **DeepSeek Flash** | 5,20 | 0,28 | **5,48 USD** |
 | Qwen Flash | 7,59 | 0,43 | **8,02 USD** |
+| Gemini Flash | 20,34 | *no medida* | — |
+
+De Gemini Flash solo se midió la clasificación: la consulta de políticas se
+ejercitó con los otros dos. Se deja la casilla vacía en vez de extrapolar.
 
 Con el volumen que declara el negocio —3.000 clasificaciones y 80 consultas
 diarias— **la solución completa cuesta menos de seis dólares al mes.** El
@@ -66,7 +81,15 @@ contrastar, dos publicaciones daban cifras del doble y del triple de las reales.
 
 ## 2 · Dos cosas que solo aparecen midiendo
 
-### La generación siguiente no compra nada aquí
+### El modelo más caro no acierta más
+
+Dos modelos de dos proveedores distintos aciertan **exactamente lo mismo**, 28
+de 29, y uno cuesta **3,9 veces** lo que el otro. El caro consume incluso menos
+tokens: la diferencia entera está en el precio por millón.
+
+Sin medirlo no había forma de saberlo, y la intuición apunta al revés.
+
+### La generación siguiente tampoco
 
 Se midió también la generación posterior de uno de los dos modelos: **acierta
 exactamente lo mismo**, 27 de 29, con el mismo consumo de tokens. Clasificar en
