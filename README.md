@@ -32,12 +32,13 @@ por defecto —`RUTA_*=falso`— toda consulta de política **se abstiene**, y e
 correcto: el adaptador de pruebas no cita, y una respuesta sin cita verificable
 no se emite.
 
-Cuatro cosas que este proyecto midió y que cambian cómo se lee el resto:
+Cinco cosas que este proyecto midió y que cambian cómo se lee el resto:
 
 | Hallazgo | Dónde |
 |---|---|
 | **Ningún umbral de similitud cumple la abstención del 100 %.** No es un problema de calibración: es el límite de la recuperación léxica. Por eso la verificación de cita es un control portante y no un refuerzo | [`calibracion_umbral.md`](docs/calibracion_umbral.md) |
 | **El 99 % de precisión del clasificador clásico era falso.** 2.000 filas con 50 asuntos distintos: partiendo por asunto queda por debajo de la línea base | [`comparacion_enfoques.md`](docs/comparacion_enfoques.md) |
+| **El modelo más caro no acierta más.** Dos modelos de proveedores distintos aciertan lo mismo —28 de 29— y uno cuesta **3,9 veces** lo que el otro; el caro consume incluso menos tokens | [`costos.md`](docs/costos.md) |
 | **La primera puerta de abstención también ahorra dinero.** Dos de cada veintisiete consultas se descartan por umbral **sin llegar al modelo**: un 7 % de llamadas que no se pagan, y la puerta se puso para no inventar, no para ahorrar | [`costos.md`](docs/costos.md) |
 | **La integración continua estuvo 37 ejecuciones en rojo sin detectarse**, por un falso positivo del detector de secretos. Lo relevante no es el falso positivo: es que se había dejado de correr la verificación completa | [`integracion_continua.md`](docs/integracion_continua.md) |
 
