@@ -17,6 +17,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from mai.dominio.politicas import RespuestaDePolitica
 from mai.dominio.solicitudes import (
     LARGO_MAXIMO_ASUNTO,
     LARGO_MAXIMO_DESCRIPCION,
@@ -104,6 +105,59 @@ class ListadoDeSolicitudes(BaseModel):
     desplazamiento: int
 
 
+class ConsultaDePolitica(BaseModel):
+    """Una pregunta en lenguaje natural sobre las políticas internas."""
+
+    pregunta: str = Field(
+        min_length=1,
+        max_length=LARGO_MAXIMO_ASUNTO,
+        description="La consulta, tal como la escribiría un colaborador.",
+        examples=["¿con cuánta anticipación debo pedir vacaciones?"],
+    )
+
+
+class RespuestaDeConsulta(BaseModel):
+    """La respuesta, o la declaración de que no hay evidencia.
+
+    Abstenerse **no es un error**: es el comportamiento correcto ante una
+    pregunta que las políticas no cubren, y por eso llega con 200. Quien
+    consuma la API distingue los dos casos por `origen`, no por el código de
+    estado.
+    """
+
+    respuesta: str
+    citas: list[str] = Field(
+        description="Documento y sección que respaldan cada afirmación. Vacío si se abstuvo."
+    )
+    origen: str = Field(description="«modelo» o «abstencion».")
+    confianza: str = Field(description="«alta» o «baja».")
+    motivo: str | None = Field(
+        default=None,
+        description=(
+            "Por qué se abstuvo, si se abstuvo. Distingue causas que exigen "
+            "acciones distintas: sin_evidencia_suficiente, "
+            "respuesta_sin_cita_verificable, "
+            "cita_fuera_de_los_fragmentos_recuperados, proveedor_no_disponible."
+        ),
+    )
+    fragmentos_consultados: list[str] = Field(
+        description="Qué se recuperó antes de responder. Permite auditar la respuesta."
+    )
+    mejor_puntaje: float = Field(description="Similitud del fragmento más parecido.")
+
+    @classmethod
+    def desde_dominio(cls, respuesta: RespuestaDePolitica) -> RespuestaDeConsulta:
+        return cls(
+            respuesta=respuesta.texto,
+            citas=list(respuesta.citas),
+            origen=respuesta.origen,
+            confianza=respuesta.confianza,
+            motivo=respuesta.motivo,
+            fragmentos_consultados=list(respuesta.fragmentos_consultados),
+            mejor_puntaje=round(respuesta.mejor_puntaje, 4),
+        )
+
+
 class Salud(BaseModel):
     """Respuesta de la sonda."""
 
@@ -111,4 +165,20 @@ class Salud(BaseModel):
     proveedor_clasificacion: str = Field(
         description="Cadena de proveedores configurada para clasificar.",
         examples=["falso"],
+    )
+    proveedor_rag: str = Field(
+        description=(
+            "Cadena configurada para responder políticas. Con «falso» toda "
+            "consulta se abstendrá en la verificación de cita, porque el "
+            "adaptador de pruebas no cita."
+        ),
+        examples=["openai,dashscope"],
+    )
+    fragmentos_indexados: int = Field(
+        description=(
+            "Cuántos fragmentos de política hay cargados. **Cero significa que "
+            "toda consulta se va a abstener**: normalmente indica que "
+            "MAI_RUTA_POLITICAS no apunta al corpus."
+        ),
+        examples=[67],
     )

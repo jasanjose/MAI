@@ -18,13 +18,20 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, Query, Request, Response, status
 
-from mai.adaptadores.llm.fabrica import construir_para_clasificacion
+from mai.adaptadores.llm.fabrica import construir_para_clasificacion, construir_para_rag
 from mai.adaptadores.persistencia.registro_idempotencia_memoria import (
     RegistroIdempotenciaEnMemoria,
 )
 from mai.adaptadores.persistencia.repositorio_memoria import RepositorioEnMemoria
 from mai.api.errores import registrar_manejadores
-from mai.api.esquemas import ListadoDeSolicitudes, Salud, SolicitudCreada, SolicitudNueva
+from mai.api.esquemas import (
+    ConsultaDePolitica,
+    ListadoDeSolicitudes,
+    RespuestaDeConsulta,
+    Salud,
+    SolicitudCreada,
+    SolicitudNueva,
+)
 from mai.dominio.clasificacion import Clasificador
 from mai.dominio.idempotencia import (
     RESERVA_CONFLICTO,
@@ -36,6 +43,7 @@ from mai.dominio.idempotencia import (
     calcular_huella,
     normalizar_clave,
 )
+from mai.dominio.politicas import RecuperadorDeFragmentos, ServicioDePoliticas
 from mai.dominio.puertos import ProveedorLLM
 from mai.dominio.solicitudes import (
     LIMITE_MAXIMO,
@@ -50,6 +58,7 @@ from mai.observabilidad.traza import (
     id_traza_actual,
     normalizar_id_traza,
 )
+from mai.rag.fabrica import construir_recuperador
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +84,8 @@ def crear_app(
     proveedor: ProveedorLLM | None = None,
     repositorio: RepositorioSolicitudes | None = None,
     idempotencia: RegistroDeIdempotencia | None = None,
+    recuperador: RecuperadorDeFragmentos | None = None,
+    proveedor_rag: ProveedorLLM | None = None,
 ) -> FastAPI:
     """Construye la aplicación.
 
@@ -94,6 +105,15 @@ def crear_app(
         idempotencia if idempotencia is not None else RegistroIdempotenciaEnMemoria()
     )
 
+    # El RAG usa su propia cadena de proveedores: clasificar y responder
+    # políticas tienen restricciones opuestas (ADR-004 §3). Si no se inyecta
+    # una, se arma desde RUTA_RAG.
+    recuperador = recuperador if recuperador is not None else construir_recuperador()
+    proveedor_de_rag = proveedor_rag if proveedor_rag is not None else construir_para_rag()
+    app.state.recuperador = recuperador
+    app.state.proveedor_rag = proveedor_de_rag
+    app.state.politicas = ServicioDePoliticas(recuperador, proveedor_de_rag)
+
     registrar_manejadores(app)
     _registrar_traza(app)
     _registrar_rutas(app)
@@ -104,7 +124,12 @@ def _obtener_servicio(peticion: Request) -> ServicioSolicitudes:
     return peticion.app.state.servicio
 
 
+def _obtener_politicas(peticion: Request) -> ServicioDePoliticas:
+    return peticion.app.state.politicas
+
+
 ServicioInyectado = Annotated[ServicioSolicitudes, Depends(_obtener_servicio)]
+PoliticasInyectado = Annotated[ServicioDePoliticas, Depends(_obtener_politicas)]
 
 
 def _registrar_traza(app: FastAPI) -> None:
@@ -142,13 +167,56 @@ def _registrar_rutas(app: FastAPI) -> None:
     async def salud(peticion: Request) -> Salud:
         """Indica si el servicio responde y con qué cadena de proveedores.
 
-        Devolver la cadena configurada sirve para diagnosticar el problema
-        más frecuente al desplegar: creer que se apuntó a un proveedor real
-        y estar corriendo contra el falso.
+        Los tres datos que devuelve son los tres despliegues mal configurados
+        que de verdad ocurren: creer que se apuntó a un proveedor real y estar
+        contra el falso, lo mismo en la cadena del RAG, y no haber apuntado
+        `MAI_RUTA_POLITICAS` al corpus. Los tres producen un sistema que
+        arranca, responde 200 y no sirve — y ninguno se ve sin esto.
         """
-        proveedor: ProveedorLLM = peticion.app.state.proveedor
-        cadena = getattr(proveedor, "proveedores", (proveedor.nombre,))
-        return Salud(estado="ok", proveedor_clasificacion=",".join(cadena))
+
+        def cadena_de(proveedor: ProveedorLLM) -> str:
+            return ",".join(getattr(proveedor, "proveedores", (proveedor.nombre,)))
+
+        recuperador = peticion.app.state.recuperador
+        return Salud(
+            estado="ok",
+            proveedor_clasificacion=cadena_de(peticion.app.state.proveedor),
+            proveedor_rag=cadena_de(peticion.app.state.proveedor_rag),
+            fragmentos_indexados=len(recuperador) if hasattr(recuperador, "__len__") else 0,
+        )
+
+    @app.post(
+        "/consultas",
+        response_model=RespuestaDeConsulta,
+        tags=["politicas"],
+        summary="Consulta las políticas internas en lenguaje natural",
+    )
+    async def consultar(
+        cuerpo: ConsultaDePolitica, politicas: PoliticasInyectado
+    ) -> RespuestaDeConsulta:
+        """Responde citando documento y sección, o declara que no tiene evidencia.
+
+        **Abstenerse llega con 200, no con un error.** Es el comportamiento
+        correcto ante una pregunta que las políticas no cubren, y tratarlo
+        como fallo llevaría a que un cliente lo reintentara o lo registrara
+        como incidente. Los dos casos se distinguen por `origen`.
+
+        Una respuesta sin cita verificable no se emite: si el modelo responde
+        sin citar, o cita algo que no estaba entre los fragmentos recuperados,
+        la respuesta se descarta y se devuelve la abstención con su motivo.
+        """
+        respuesta = politicas.consultar(cuerpo.pregunta)
+        logger.info(
+            "consulta_de_politica",
+            extra={
+                "id_traza": id_traza_actual(),
+                "origen": respuesta.origen,
+                "motivo": respuesta.motivo,
+                "citas": list(respuesta.citas),
+                "mejor_puntaje": round(respuesta.mejor_puntaje, 4),
+            },
+        )
+        return RespuestaDeConsulta.desde_dominio(respuesta)
 
     @app.post(
         "/solicitudes",
