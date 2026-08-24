@@ -15,7 +15,7 @@ escala a una persona lo que no puede resolver.
 | 2 · Autonomía e integración | ✅ **completa** | `src/mai/api/`, `src/mai/adaptadores/llm/`, `legacy/` |
 | 3 · Complejidad y calidad | ✅ **completa** | `src/mai/rag/`, `docs/informe_seguridad.md`, `docs/guia_equipo.md` |
 | 4 · Arquitectura | ✅ **documentada** | `docs/arquitectura.md`, 5 ADR |
-| 5 · Estrategia | 🚧 parcial | `docs/metricas.md`, `docs/conjunto_referencia.csv` |
+| 5 · Estrategia | 🚧 parcial | `docs/decision_requerimientos.md`, `src/mai/evaluacion/` |
 
 **Lo que quedó fuera está declarado en la sección «Límites», al final.** No
 está escondido: reconocer un límite es información útil para quien mantiene
@@ -310,6 +310,7 @@ Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 | [`docs/conjunto_referencia.csv`](docs/conjunto_referencia.csv) | 58 casos etiquetados a mano, con 21 citas verificadas contra los PDF |
 | [`docs/decisiones.md`](docs/decisiones.md) | Alta de dependencias, con lo descartado y su costo |
 | [`docs/arquitectura.md`](docs/arquitectura.md) | Componentes, flujo extremo a extremo, datos, secretos y costo |
+| [`docs/decision_requerimientos.md`](docs/decision_requerimientos.md) | R-01, R-02 y R-03: cuándo IA, cuándo automatización, y cuándo la IA estorba |
 | [`docs/adr/ADR-001`](docs/adr/ADR-001-vectorizacion-e-indice.md) | Vectorización, índice y métrica de similitud |
 | [`docs/adr/ADR-002`](docs/adr/ADR-002-orquestacion.md) | Orquestación propia, sin n8n ni framework de agentes |
 | [`docs/adr/ADR-003`](docs/adr/ADR-003-fragmentacion.md) | Fragmentación por sección numerada |
