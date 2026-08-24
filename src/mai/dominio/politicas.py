@@ -55,10 +55,20 @@ MOTIVO_CITA_INVENTADA = "cita_fuera_de_los_fragmentos_recuperados"
 MOTIVO_PROVEEDOR_CAIDO = "proveedor_no_disponible"
 MOTIVO_CONSULTA_VACIA = "consulta_vacia"
 
-# Provisional. `docs/metricas.md` §4 fija el criterio para elegirlo —el valor
-# más bajo que aún abstiene en el 100 % de los casos sin respaldo— y el número
-# sale de calibrar contra el conjunto de referencia, no de elegirlo a mano.
-# Hasta entonces se usa un valor conservador y se declara como tal.
+# Calibrado contra el conjunto de referencia. El procedimiento y la tabla
+# completa están en `docs/calibracion_umbral.md`.
+#
+# El resultado obliga a leer este número distinto de como suele leerse un
+# umbral: **NO es el mecanismo de abstención, es el primero de dos filtros.**
+# La medición mostró que ningún valor cumple la abstención del 100 % —una
+# pregunta sobre viáticos a Ciudad de México puntúa 0.411, más alto que 18 de
+# las 21 consultas legítimas, porque léxicamente SÍ se parece a la política de
+# viáticos; lo que la hace inválida es semántico—. BM25 se probó y tampoco lo
+# resuelve.
+#
+# 0.20 es el valor más alto que no pierde ni una de las 21 consultas con
+# respuesta. Descarta 2 de los 6 casos sin respaldo; los otros 4 le tocan a la
+# verificación de cita, que por eso es portante y no un refuerzo.
 UMBRAL_SIMILITUD = 0.20
 
 FRAGMENTOS_RECUPERADOS = 5
