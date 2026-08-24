@@ -1,0 +1,119 @@
+<header>
+  <h1>MAI · Solicitudes</h1>
+  <p>Mesa de Ayuda Inteligente — listado con filtros</p>
+</header>
+
+<section class="filtros">
+  <label>
+    Área
+    <select (change)="cambiar('area', $any($event.target).value)">
+      <option value="">Todas</option>
+      @for (a of areas; track a) { <option [value]="a">{{ a }}</option> }
+    </select>
+  </label>
+
+  <label>
+    Estado
+    <select (change)="cambiar('estado', $any($event.target).value)">
+      <option value="">Todos</option>
+      @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
+    </select>
+  </label>
+
+  <label>
+    Categoría
+    <select (change)="cambiar('categoria', $any($event.target).value)">
+      <option value="">Todas</option>
+      @for (c of categorias; track c) { <option [value]="c">{{ c }}</option> }
+    </select>
+  </label>
+
+  <label>
+    Prioridad
+    <select (change)="cambiar('prioridad', $any($event.target).value)">
+      <option value="">Todas</option>
+      @for (p of prioridades; track p) { <option [value]="p">{{ p }}</option> }
+    </select>
+  </label>
+
+  <div class="acciones">
+    <button type="button" (click)="aplicar()" [disabled]="cargando()">Filtrar</button>
+    <button type="button" class="secundario" (click)="limpiar()" [disabled]="cargando()">
+      Limpiar
+    </button>
+  </div>
+</section>
+
+@if (cargando()) {
+  <p class="aviso">Consultando…</p>
+}
+
+@if (error(); as e) {
+  <div class="error">
+    <strong>{{ e.codigo }}</strong>
+    <p>{{ e.mensaje }}</p>
+    @if (e.id_traza) {
+      <!-- El identificador se muestra para que quien reporte el problema
+           pueda darlo y quien lo investigue encuentre esa petición exacta. -->
+      <p class="traza">Identificador de traza: <code>{{ e.id_traza }}</code></p>
+    }
+  </div>
+}
+
+@if (!cargando() && !error()) {
+  @if (solicitudes().length === 0) {
+    @if (consultado()) {
+      <p class="aviso">
+        No hay solicitudes que cumplan estos filtros.
+        @if (total() === 0 && desplazamiento() === 0) {
+          Si acaba de levantar el sistema, todavía no se ha creado ninguna.
+        }
+      </p>
+    }
+  } @else {
+    <p class="resumen">
+      Mostrando {{ solicitudes().length }} de {{ total() }}
+      @if (desplazamiento() > 0) { · desde la {{ desplazamiento() + 1 }} }
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th><th>Asunto</th><th>Área</th>
+          <th>Categoría</th><th>Prioridad</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of solicitudes(); track s.codigo) {
+          <tr>
+            <td><code>{{ s.codigo }}</code></td>
+            <td>{{ s.asunto }}</td>
+            <td>{{ s.area }}</td>
+            <td>
+              {{ s.categoria }}
+              @if (esDegradada(s)) {
+                <span class="degradada" [title]="'Motivo: ' + (s.motivo_degradacion ?? 'sin especificar')">
+                  degradada
+                </span>
+              }
+            </td>
+            <td>{{ s.prioridad }}</td>
+            <td>{{ s.estado }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="paginacion">
+      <button type="button" (click)="pagina(-1)" [disabled]="desplazamiento() === 0">
+        ← Anteriores
+      </button>
+      <button type="button" (click)="pagina(1)" [disabled]="!hayMas()">Siguientes →</button>
+    </div>
+
+    <p class="nota">
+      <span class="degradada">degradada</span> significa que la categoría la puso
+      una regla de reserva y no el modelo: acierta menos y conviene revisarla.
+    </p>
+  }
+}

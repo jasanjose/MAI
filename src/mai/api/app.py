@@ -14,10 +14,12 @@ adaptador falso; producción la construye desde el entorno.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, Query, Request, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 
 from mai.adaptadores.llm.fabrica import construir_para_clasificacion, construir_para_rag
 from mai.adaptadores.persistencia.registro_idempotencia_memoria import (
@@ -63,6 +65,16 @@ from mai.observabilidad.traza import (
 from mai.rag.fabrica import construir_recuperador
 
 logger = logging.getLogger(__name__)
+
+# Orígenes autorizados a llamar la API desde un navegador. Se leen del
+# entorno y **el valor por defecto es la lista vacía**: sin configurar, ningún
+# origen cruzado puede llamarla.
+#
+# Se descarta `*` deliberadamente. Un comodín permite que cualquier página que
+# el usuario tenga abierta llame a esta API con las credenciales del
+# navegador; es cómodo en desarrollo y una puerta abierta en producción, y la
+# comodidad de hoy se queda en el archivo de mañana.
+VARIABLE_ORIGENES = "MAI_ORIGENES_PERMITIDOS"
 
 CABECERA_IDEMPOTENCIA = "Idempotency-Key"
 CABECERA_REPETIDA = "Idempotency-Replayed"
@@ -127,10 +139,37 @@ def crear_app(
     app.state.proveedor_rag = proveedor_de_rag
     app.state.politicas = ServicioDePoliticas(recuperador, proveedor_de_rag)
 
+    _registrar_cors(app)
     registrar_manejadores(app)
     _registrar_traza(app)
     _registrar_rutas(app)
     return app
+
+
+def _registrar_cors(app: FastAPI) -> None:
+    """Autoriza los orígenes de `MAI_ORIGENES_PERMITIDOS`, separados por comas.
+
+    Sin la variable no se instala el middleware: una API que nadie llama desde
+    un navegador no necesita CORS, y añadirlo «por si acaso» solo amplía la
+    superficie.
+
+    No se permiten credenciales (`allow_credentials=False`) porque la API no
+    usa cookies ni sesiones. Activarlo sin necesitarlo convierte cualquier
+    origen autorizado en un origen que puede actuar en nombre del usuario.
+    """
+    origenes = [o.strip() for o in os.environ.get(VARIABLE_ORIGENES, "").split(",") if o.strip()]
+    if not origenes:
+        return
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origenes,
+        allow_credentials=False,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type", CABECERA_IDEMPOTENCIA, CABECERA_TRAZA],
+        expose_headers=[CABECERA_TRAZA, CABECERA_REPETIDA],
+    )
+    logger.info("cors_habilitado", extra={"origenes": origenes})
 
 
 def _obtener_servicio(peticion: Request) -> ServicioSolicitudes:

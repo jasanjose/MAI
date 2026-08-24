@@ -1,0 +1,75 @@
+:host {
+  display: block;
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #1a1a1a;
+}
+
+header h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+header p { margin: 0 0 1.5rem; color: #666; }
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  padding: 1rem;
+  background: #f6f7f9;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+}
+.filtros label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: #444; }
+.filtros select { padding: 0.4rem; border: 1px solid #c9ced6; border-radius: 4px; min-width: 10rem; }
+.acciones { display: flex; gap: 0.5rem; margin-left: auto; }
+
+button {
+  padding: 0.45rem 1rem;
+  border: 1px solid #1a1a1a;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.secundario { background: #fff; color: #1a1a1a; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid #e1e4e8; }
+th { font-weight: 600; color: #444; border-bottom-width: 2px; }
+tbody tr:hover { background: #fafbfc; }
+code { font-family: ui-monospace, monospace; font-size: 0.85em; }
+
+/* La marca de degradada es deliberadamente visible: quien lee la tabla debe
+   poder distinguir una clasificación del modelo de una de reserva. */
+.degradada {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 3px;
+  background: #fff3cd;
+  border: 1px solid #e0c56a;
+  color: #7a5c00;
+  font-size: 0.7rem;
+  cursor: help;
+}
+
+.resumen { color: #666; font-size: 0.85rem; margin: 0 0 0.5rem; }
+.aviso { color: #666; padding: 1rem 0; }
+.nota { color: #666; font-size: 0.8rem; margin-top: 1rem; }
+
+.error {
+  padding: 0.9rem 1rem;
+  background: #fdf2f2;
+  border: 1px solid #e4b1b1;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+.error strong { color: #9b1c1c; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+.error p { margin: 0.4rem 0 0; }
+.error .traza { font-size: 0.8rem; color: #666; }
+
+.paginacion { display: flex; gap: 0.5rem; margin-top: 1rem; }
