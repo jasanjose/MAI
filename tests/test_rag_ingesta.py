@@ -12,10 +12,10 @@ from pathlib import Path
 
 import pytest
 
+from mai.dominio.politicas import Fragmento
 from mai.rag.ingesta import (
     LARGO_MINIMO_FRAGMENTO,
     ErrorDeIngesta,
-    Fragmento,
     extraer_texto,
     fragmentar,
     ingerir,

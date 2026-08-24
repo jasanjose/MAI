@@ -73,6 +73,8 @@ from collections.abc import Sequence
 
 from mai.dominio.puertos import Vector, Vectorizador
 
+__all__ = ["PALABRAS_VACIAS", "Vector", "VectorizadorTFIDF", "coseno", "tokenizar"]
+
 # Se conservan los dígitos: el corpus está lleno de plazos y montos —«quince
 # (15) días», «tres (3) días hábiles»— y quien pregunta escribe el número.
 _TOKEN = re.compile(r"[a-z0-9]+")

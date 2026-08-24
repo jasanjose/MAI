@@ -1,5 +1,11 @@
 """Ingesta de las políticas: de PDF a fragmentos citables.
 
+`Fragmento` se importa del dominio y no se define aquí. La dirección de la
+dependencia importa: la ingesta es infraestructura —sabe de PDF, de ReportLab
+y de expresiones regulares— y el fragmento citable es vocabulario del
+problema. Que la infraestructura dependa del dominio es correcto; al revés,
+no.
+
 **No hay algoritmo de fragmentación aquí, y eso es la decisión.** Los cinco
 documentos traen secciones numeradas —`3. Solicitud y aprobación`, `3.1.`,
 `3.2.`— y esa numeración ya es la unidad de sentido: cada una es una regla
@@ -30,6 +36,8 @@ from pathlib import Path
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
+from mai.dominio.politicas import Fragmento
+
 logger = logging.getLogger(__name__)
 
 # El título de una sección empieza con letra. Sin esa exigencia, una fila de
@@ -46,50 +54,6 @@ LARGO_MINIMO_FRAGMENTO = 20
 
 class ErrorDeIngesta(Exception):
     """No se pudo leer un documento de políticas."""
-
-
-@dataclass(frozen=True)
-class Fragmento:
-    """Un trozo citable del corpus.
-
-    `documento` y `seccion` son la cita. No se generan: se leen del propio
-    documento, así que quien reciba la respuesta puede abrir el PDF en esa
-    sección y comprobarla.
-    """
-
-    documento: str
-    titulo_documento: str
-    version: str
-    seccion: str
-    titulo_seccion: str
-    texto: str
-
-    # Para una subsección, el título de la sección que la contiene. `§3.1`
-    # vive bajo «Solicitud y aprobación», y esa palabra no aparece en su
-    # texto — pero es la que alguien escribiría al preguntar. Sin este campo,
-    # la subsección se indexa sin el término que mejor la describe.
-    titulo_padre: str = ""
-
-    @property
-    def cita(self) -> str:
-        """Cómo se cita este fragmento: `POL-GTH-01 §3.1`."""
-        return f"{self.documento} §{self.seccion}"
-
-    @property
-    def texto_para_buscar(self) -> str:
-        """Lo que se indexa: los títulos cuentan tanto como el cuerpo.
-
-        «3. Contraseñas» contiene la palabra que alguien buscaría, y el cuerpo
-        de la sección puede no repetirla nunca. Para una subsección se añade
-        además el título de su sección padre, por el mismo motivo.
-
-        Los títulos se anteponen una sola vez. `texto` no los incluye, así que
-        no se duplican términos: repetirlos inflaría su frecuencia y haría que
-        una sección pareciera más relevante de lo que es solo por llamarse
-        como la pregunta.
-        """
-        partes = [self.titulo_padre, self.titulo_seccion, self.texto]
-        return " ".join(parte for parte in partes if parte)
 
 
 @dataclass(frozen=True)
