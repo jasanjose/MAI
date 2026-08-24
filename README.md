@@ -14,7 +14,7 @@ escala a una persona lo que no puede resolver.
 | 1 · Fundamentos | ✅ **completa** | `src/mai/`, `sql/`, `tests/` |
 | 2 · Autonomía e integración | ✅ **completa** | `src/mai/api/`, `src/mai/adaptadores/llm/`, `legacy/` |
 | 3 · Complejidad y calidad | ✅ **completa** | `src/mai/rag/`, `docs/informe_seguridad.md`, `docs/guia_equipo.md` |
-| 4 · Arquitectura | 🚧 parcial | `docs/adr/` (5 ADR escritos) |
+| 4 · Arquitectura | ✅ **documentada** | `docs/arquitectura.md`, 5 ADR |
 | 5 · Estrategia | 🚧 parcial | `docs/metricas.md`, `docs/conjunto_referencia.csv` |
 
 **Lo que quedó fuera está declarado en la sección «Límites», al final.** No
@@ -309,6 +309,7 @@ Decisiones que se tomaron por criterio y que otro podría tomar distinto.
 | [`docs/metricas.md`](docs/metricas.md) | Precisión objetivo, latencia p95 y umbrales — **definidos antes de implementar** |
 | [`docs/conjunto_referencia.csv`](docs/conjunto_referencia.csv) | 58 casos etiquetados a mano, con 21 citas verificadas contra los PDF |
 | [`docs/decisiones.md`](docs/decisiones.md) | Alta de dependencias, con lo descartado y su costo |
+| [`docs/arquitectura.md`](docs/arquitectura.md) | Componentes, flujo extremo a extremo, datos, secretos y costo |
 | [`docs/adr/ADR-001`](docs/adr/ADR-001-vectorizacion-e-indice.md) | Vectorización, índice y métrica de similitud |
 | [`docs/adr/ADR-002`](docs/adr/ADR-002-orquestacion.md) | Orquestación propia, sin n8n ni framework de agentes |
 | [`docs/adr/ADR-003`](docs/adr/ADR-003-fragmentacion.md) | Fragmentación por sección numerada |
