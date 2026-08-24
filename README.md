@@ -21,6 +21,36 @@ escala a una persona lo que no puede resolver.
 está escondido: reconocer un límite es información útil para quien mantiene
 el sistema.
 
+### Lo más importante que hay que saber antes de leer el código
+
+**Ningún proveedor de IA real se ha ejercitado.** No llegó credencial y no se
+usó ninguna propia. Todo el módulo de lenguaje está construido y probado
+contra un transporte simulado. Con la configuración por defecto —`RUTA_*=falso`—
+toda consulta de política **se abstiene**, y eso es correcto: el adaptador de
+pruebas no cita, y una respuesta sin cita verificable no se emite.
+
+Tres cosas que este proyecto midió y que cambian cómo se lee el resto:
+
+| Hallazgo | Dónde |
+|---|---|
+| **Ningún umbral de similitud cumple la abstención del 100 %.** No es un problema de calibración: es el límite de la recuperación léxica. Por eso la verificación de cita es un control portante y no un refuerzo | [`calibracion_umbral.md`](docs/calibracion_umbral.md) |
+| **El 99 % de precisión del clasificador clásico era falso.** 2.000 filas con 50 asuntos distintos: partiendo por asunto queda por debajo de la línea base | [`comparacion_enfoques.md`](docs/comparacion_enfoques.md) |
+| **La integración continua estuvo 37 ejecuciones en rojo sin detectarse**, por un falso positivo del detector de secretos. Lo relevante no es el falso positivo: es que se había dejado de correr la verificación completa | [`integracion_continua.md`](docs/integracion_continua.md) |
+
+---
+
+## Verificación rápida
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+pytest          # 501 pruebas, sin red ni credenciales
+ruff check .
+bandit -r src/
+```
+
+Sin nada más: sin base de datos, sin Docker, sin claves.
+
 ---
 
 ## Instalación
@@ -412,4 +442,30 @@ Lo que **no** quedó hecho, y por qué.
   proveedores propios (Groq, DashScope, OpenAI) o un modelo local, y el
   criterio de la elección está declarado en
   [ADR-004](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md).
-- **Etapas 4 y 5 en curso.** Este README se actualiza al cerrar cada una.
+**Pendientes de la entrega, no del código:**
+
+- **La autoevaluación PC-GTH-68 no se incluye**: el formato no venía en los
+  materiales entregados. Se solicita por el canal interno.
+
+---
+
+## Dónde está cada entregable
+
+| Lo que pide el enunciado | Dónde |
+|---|---|
+| Script de limpieza, SQL, pruebas, README | `src/mai/`, [`sql/consultas.sql`](sql/consultas.sql), `tests/` |
+| API propia con contrato | [`docs/api.md`](docs/api.md) · contrato generado en `/openapi.json` |
+| Módulo de IA desacoplado | [`ADR-004`](docs/adr/ADR-004-desacoplamiento-proveedor-llm.md) · `src/mai/dominio/puertos.py` |
+| Defectos del legacy, rojo→verde | `legacy/legacy_module.py` · commits `8c7135d`→`ac5e48c`, `db7967d`→`b026ef4`, `bb7dcb9`→`41f75bd` |
+| RAG con citas y abstención | `src/mai/rag/`, [`ADR-001`](docs/adr/ADR-001-vectorizacion-e-indice.md), [`ADR-003`](docs/adr/ADR-003-fragmentacion.md) |
+| CI: ejecución exitosa y fallida | [`docs/integracion_continua.md`](docs/integracion_continua.md) |
+| Informe de seguridad | [`docs/informe_seguridad.md`](docs/informe_seguridad.md) |
+| Observabilidad | `GET /metricas` · `src/mai/observabilidad/` |
+| Artefacto para el equipo | [`docs/guia_equipo.md`](docs/guia_equipo.md) |
+| Arquitectura y ADR | [`docs/arquitectura.md`](docs/arquitectura.md) · 5 ADR en `docs/adr/` |
+| Decisión R-01/R-02/R-03 | [`docs/decision_requerimientos.md`](docs/decision_requerimientos.md) |
+| Métricas previas y conjunto de referencia | [`docs/metricas.md`](docs/metricas.md) · [`conjunto_referencia.csv`](docs/conjunto_referencia.csv) |
+| Suite de evaluación que falla bajo umbral | `src/mai/evaluacion/` · `scripts/evaluar.py` |
+| Modelo clásico y comparación | `scripts/entrenar_clasico.py` · [`docs/comparacion_enfoques.md`](docs/comparacion_enfoques.md) |
+| Revisión del cambio entregado | [`docs/revision_pr.md`](docs/revision_pr.md) |
+| Declaración de uso de IA | [`docs/declaracion_uso_ia.md`](docs/declaracion_uso_ia.md) |
