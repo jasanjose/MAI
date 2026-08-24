@@ -1,10 +1,25 @@
 /**
  * Cliente de la API de MAI.
  *
- * La URL base se lee de `window.MAI_API` si existe, y si no cae en el puerto
- * de desarrollo. Se resuelve en tiempo de ejecución y no al compilar para que
- * el mismo paquete sirva en varios ambientes: recompilar para cambiar una URL
- * es lo que produce «funciona en mi máquina».
+ * La URL base se resuelve en tiempo de ejecución y no al compilar, para que el
+ * mismo paquete sirva en varios ambientes: recompilar para cambiar una URL es
+ * lo que produce «funciona en mi máquina».
+ *
+ * Se busca en tres sitios, en este orden:
+ *
+ * 1. `window.MAI_API`, que define `index.html` — es lo que se sobrescribe al
+ *    desplegar, inyectando otro valor antes de que cargue la aplicación.
+ * 2. `localStorage.MAI_API`, para desarrollo. **Sobrevive a la recarga**, que
+ *    es la diferencia que importa: asignar `window.MAI_API` desde la consola
+ *    no sirve de nada, porque la recarga destruye la variable y sin recargar
+ *    esta clase ya leyó su valor.
+ * 3. El puerto documentado en el README.
+ *
+ * El paso 2 existe porque el puerto por defecto puede estar ocupado por otro
+ * servicio de la máquina, y entonces las instrucciones del README no llevan a
+ * ninguna parte. Se resuelve así y no con un parámetro en la URL a propósito:
+ * una dirección tomada de la barra del navegador es una dirección que puede
+ * poner un tercero en un enlace.
  */
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
@@ -61,7 +76,22 @@ declare global {
 @Injectable({ providedIn: 'root' })
 export class Api {
   private readonly http = inject(HttpClient);
-  private readonly base = window.MAI_API ?? 'http://127.0.0.1:8000';
+  /** Pública para que el mensaje de error pueda decir contra qué intentó. */
+  readonly base = Api.resolverBase();
+
+  /** Ver la cabecera del archivo: window → localStorage → valor por defecto. */
+  private static resolverBase(): string {
+    if (window.MAI_API) return window.MAI_API;
+    try {
+      const guardada = window.localStorage.getItem('MAI_API');
+      if (guardada) return guardada;
+    } catch {
+      // localStorage puede estar bloqueado por la configuración del navegador.
+      // No es motivo para que la aplicación no arranque: se usa el valor por
+      // defecto y se sigue.
+    }
+    return 'http://127.0.0.1:8000';
+  }
 
   listar(filtros: Filtros): Observable<Listado> {
     // Un filtro vacío NO se envía. Mandarlo como cadena vacía haría que la

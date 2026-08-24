@@ -83,9 +83,16 @@
     <span class="codigo">{{ e.codigo }}</span>
     <p>{{ e.mensaje }}</p>
     @if (e.codigo === 'SIN_CONEXION') {
-      <!-- El error más frecuente tiene una causa concreta y una orden que la
-           arregla. Un mensaje que no dice qué hacer obliga a leer el README. -->
-      <pre>MAI_ORIGENES_PERMITIDOS=http://localhost:4200 python -m mai.api</pre>
+      <!-- El error más frecuente tiene dos causas y cada una su orden. Un
+           mensaje que no dice qué hacer obliga a leer el README, y la segunda
+           causa ni siquiera está ahí: que el puerto por defecto lo ocupe otro
+           servicio de la máquina. -->
+      <p class="traza">Intentando contra <code>{{ base }}</code>. Dos causas posibles:</p>
+      <pre>1 · la API no autoriza este origen
+MAI_ORIGENES_PERMITIDOS=http://localhost:4200 python -m mai.api
+
+2 · la API corre en otro puerto — se fija una vez, en la consola:
+localStorage.MAI_API = 'http://127.0.0.1:8010'; location.reload()</pre>
     }
     @if (e.id_traza) {
       <!-- El identificador se muestra para que quien reporte el problema pueda

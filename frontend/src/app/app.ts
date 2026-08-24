@@ -36,6 +36,9 @@ const TAMANO_PAGINA = 20;
 export class App {
   private readonly api = inject(Api);
 
+  /** Contra qué dirección se está hablando, para el mensaje de error. */
+  protected readonly base = this.api.base;
+
   protected readonly areas = AREAS;
   protected readonly estados = ESTADOS;
   protected readonly categorias = CATEGORIAS;
