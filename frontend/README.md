@@ -42,6 +42,31 @@ conviene revisarla. Pasando el cursor por encima se ve el motivo.
 Tratar las dos igual es el error más probable al integrarse con esta API, y
 por eso la pantalla las distingue.
 
+## El sistema de diseño, y por qué es CSS y nada más
+
+Estilo **data-dense**: filas de 36 px, tipografía de 12-14 px, cabecera fija al
+desplazar, relleno de 8-12 px. La pantalla es una tabla de trabajo, no una
+página de producto.
+
+Tres reglas que se siguieron y se pueden comprobar leyendo `app.css`:
+
+**El color nunca lleva la información solo.** Cada ficha de estado o prioridad
+es punto + color + texto, y la marca de degradada añade un icono SVG. Quien no
+distingue un matiz recibe lo mismo. Es la regla de accesibilidad de mayor
+severidad y la más fácil de incumplir sin notarlo.
+
+**Contraste verificado, no supuesto.** Los tres neutros van anotados con su
+ratio sobre blanco en el propio archivo. El más tenue es 4,6:1 — justo sobre el
+mínimo, y a propósito: es texto secundario, no decoración.
+
+**Foco visible y movimiento opcional.** `:focus-visible` en todo lo interactivo,
+y `prefers-reduced-motion` anula las transiciones.
+
+**Sin Google Fonts.** Se usa la pila del sistema. Pedirle dos fuentes a un
+tercero solo para renderizar sería incoherente con no haber traído una librería
+de componentes — y esa es justamente la afirmación que esta pantalla sostiene:
+`package.json` no ganó una sola dependencia.
+
 ## Estructura
 
 ```
@@ -64,3 +89,8 @@ src/app/app.css    estilos
 - **No hay creación de solicitudes desde la pantalla**, solo consulta. El
   requisito pedía el listado con filtros.
 - **No hay autenticación**, porque la API tampoco la tiene.
+- **El motivo de una degradación solo se ve al pasar el cursor.** Es un
+  `title`, y en pantalla táctil no hay cursor que pasar. La marca sí se ve
+  siempre —icono, color y texto—; lo que queda oculto es el porqué. Ponerlo
+  inline en cada fila cargaría la tabla, y hacerlo desplegable pedía estado
+  que esta pantalla no tiene. Se declara en vez de resolverlo a medias.
