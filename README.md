@@ -411,6 +411,19 @@ Lo que **no** quedó hecho, y por qué.
   corridas con 64 hilos, y a través del cliente de pruebas no se manifiesta
   nunca. El cerrojo está por el argumento, no por la prueba.
 
+**De la etapa 4:**
+
+- **La integración bidireccional está a medias.** El envío hacia el servicio
+  externo existe, con tiempo de espera, reintento con retroceso e
+  `Idempotency-Key`. **La recepción por webhook no está construida**: el
+  mecanismo de idempotencia que necesita ya existe y está probado, pero no hay
+  ruta que lo exponga. Diseñada en
+  [`arquitectura.md`](docs/arquitectura.md) §4.
+- **El control de costo no tiene presupuesto ni alerta.** Están el método, los
+  supuestos declarados y la medición de tokens por proveedor; **faltan el
+  límite máximo configurable y la alerta al superarlo**. Lo que sí está
+  decidido es qué haría el sistema al superarlo, y en qué orden.
+
 **De la etapa 3:**
 
 - **Ningún proveedor de lenguaje real se ha ejercitado.** Todo está probado
