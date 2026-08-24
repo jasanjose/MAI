@@ -49,6 +49,20 @@ export class App {
   protected readonly consultado = signal(false);
 
   protected readonly desplazamiento = computed(() => this.filtros().desplazamiento ?? 0);
+
+  /** Cuántas de las mostradas llevan clasificación de reserva. */
+  protected readonly degradadas = computed(
+    () => this.solicitudes().filter((s) => this.esDegradada(s)).length,
+  );
+
+  /** Los filtros puestos, para mostrarlos como fichas retirables. */
+  protected readonly activos = computed(() => {
+    const f = this.filtros();
+    const campos: (keyof Filtros)[] = ['area', 'estado', 'categoria', 'prioridad'];
+    return campos
+      .filter((c) => f[c])
+      .map((c) => ({ campo: c, valor: String(f[c]) }));
+  });
   protected readonly hayMas = computed(
     () => this.desplazamiento() + this.solicitudes().length < this.total(),
   );
@@ -76,6 +90,33 @@ export class App {
 
   protected cambiar(campo: keyof Filtros, valor: string): void {
     this.filtros.update((f) => ({ ...f, [campo]: valor || undefined }));
+  }
+
+  /** Quita un filtro desde su ficha y vuelve a consultar. */
+  protected quitar(campo: keyof Filtros): void {
+    this.filtros.update((f) => ({ ...f, [campo]: undefined, desplazamiento: 0 }));
+    this.buscar();
+  }
+
+  /**
+   * Sufijo de clase CSS para un valor de catálogo.
+   *
+   * Se normaliza —minúsculas, sin tildes, espacios a guiones— porque la clase
+   * viaja al CSS y «En proceso» no es un selector válido. Un valor que no esté
+   * en el catálogo cae en `otro` en vez de generar una clase que no existe:
+   * la tabla debe seguir legible aunque la API añada un estado mañana.
+   */
+  protected clave(valor: string, conocidos: readonly string[]): string {
+    const normalizado = valor
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-');
+    const permitidos = conocidos.map((v) =>
+      v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, '-'),
+    );
+    return permitidos.includes(normalizado) ? normalizado : 'otro';
   }
 
   /**

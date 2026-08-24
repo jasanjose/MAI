@@ -1,75 +1,349 @@
+/* Sistema de diseño de la pantalla.
+ *
+ * Estilo «Data-Dense Dashboard» con base suiza: neutros, alta densidad, y el
+ * color reservado para el dato. Aquí no hay color decorativo — si algo tiene
+ * color es porque codifica un estado, y siempre acompañado de texto: la regla
+ * de accesibilidad de mayor severidad es no transmitir información solo por
+ * color, porque quien no distingue rojo de verde se queda sin la mitad.
+ *
+ * Fuentes del sistema, no Google Fonts. La pantalla no debe pedir nada a un
+ * tercero para renderizar, y es coherente con no haber traído una librería de
+ * componentes.
+ */
+
 :host {
+  /* Neutros. El texto sobre fondo cumple 4.5:1 en los tres niveles. */
+  --fondo: #ffffff;
+  --superficie: #f6f7f9;
+  --superficie-alt: #fbfcfd;
+  --borde: #d8dee4;
+  --borde-suave: #eaeef2;
+  --texto: #1a1f26;          /* 15.8:1 sobre blanco */
+  --texto-medio: #57606a;    /*  5.9:1 sobre blanco */
+  --texto-tenue: #6e7781;    /*  4.6:1 sobre blanco — el mínimo, y a propósito */
+
+  /* Semánticos. Cada par texto/fondo verificado sobre su propio fondo. */
+  --critica: #b42318;   --critica-bg: #fef3f2;
+  --alta: #b54708;      --alta-bg: #fffaeb;
+  --media: #175cd3;     --media-bg: #eff8ff;
+  --baja: #475467;      --baja-bg: #f2f4f7;
+  --violeta: #6941c6;   --violeta-bg: #f4f3ff;
+  --verde: #067647;     --verde-bg: #ecfdf3;
+
+  /* Densidad: dashboard. Filas de 36 px, relleno de 8–12. */
+  --alto-fila: 36px;
+  --radio: 6px;
+  --radio-sm: 4px;
+
   display: block;
-  max-width: 68rem;
+  max-width: 82rem;
   margin: 0 auto;
-  padding: 1.5rem;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  color: #1a1a1a;
+  padding: 1.25rem 1.5rem 3rem;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--texto);
+  background: var(--fondo);
 }
 
-header h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
-header p { margin: 0 0 1.5rem; color: #666; }
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Toda transición se anula si el sistema pide menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* ── Cabecera ──────────────────────────────────────────────────────────── */
+
+.barra {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--borde);
+  margin-bottom: 1rem;
+}
+.barra h1 { margin: 0; font-size: 1.15rem; font-weight: 650; letter-spacing: -0.01em; }
+.barra .sub { margin: 0.15rem 0 0; font-size: 0.8rem; color: var(--texto-medio); }
+
+.indicadores { display: flex; gap: 1.25rem; align-items: baseline; }
+.indicador { text-align: right; }
+.indicador .cifra {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.indicador .etiqueta {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-tenue);
+}
+.indicador.alerta .cifra { color: var(--alta); }
+
+/* ── Filtros ───────────────────────────────────────────────────────────── */
 
 .filtros {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.6rem;
   align-items: flex-end;
-  padding: 1rem;
-  background: #f6f7f9;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
-  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  margin-bottom: 0.6rem;
 }
-.filtros label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: #444; }
-.filtros select { padding: 0.4rem; border: 1px solid #c9ced6; border-radius: 4px; min-width: 10rem; }
-.acciones { display: flex; gap: 0.5rem; margin-left: auto; }
+.filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 550;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-medio);
+}
+.filtros select {
+  padding: 0.35rem 0.5rem;
+  min-width: 9.5rem;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--texto);
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-sm);
+  cursor: pointer;
+  transition: border-color 180ms ease;
+}
+.filtros select:hover { border-color: #b6bfc9; }
+.acciones { display: flex; gap: 0.4rem; margin-left: auto; }
 
 button {
-  padding: 0.45rem 1rem;
-  border: 1px solid #1a1a1a;
-  border-radius: 4px;
-  background: #1a1a1a;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 550;
   color: #fff;
+  background: var(--texto);
+  border: 1px solid var(--texto);
+  border-radius: var(--radio-sm);
   cursor: pointer;
-  font-size: 0.9rem;
+  transition: background 180ms ease, border-color 180ms ease, opacity 180ms ease;
 }
-button:disabled { opacity: 0.45; cursor: not-allowed; }
-button.secundario { background: #fff; color: #1a1a1a; }
+button:hover:not(:disabled) { background: #333b45; border-color: #333b45; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.secundario { color: var(--texto); background: var(--fondo); border-color: var(--borde); }
+button.secundario:hover:not(:disabled) { background: var(--superficie); border-color: #b6bfc9; }
 
-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid #e1e4e8; }
-th { font-weight: 600; color: #444; border-bottom-width: 2px; }
-tbody tr:hover { background: #fafbfc; }
-code { font-family: ui-monospace, monospace; font-size: 0.85em; }
+/* El anillo de foco no se quita: es lo único que ve quien navega con teclado. */
+:is(button, select, a):focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
 
-/* La marca de degradada es deliberadamente visible: quien lee la tabla debe
-   poder distinguir una clasificación del modelo de una de reserva. */
+/* ── Fichas de filtro activo ───────────────────────────────────────────── */
+
+.activos { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin-bottom: 0.75rem; }
+.activos .titulo { font-size: 0.72rem; color: var(--texto-tenue); text-transform: uppercase; letter-spacing: 0.05em; }
+.ficha-filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.3rem 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  background: var(--media-bg);
+  color: var(--media);
+  border: 1px solid #b2ddff;
+  border-radius: 999px;
+}
+.ficha-filtro button {
+  all: unset;
+  display: grid;
+  place-items: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--media);
+  line-height: 1;
+}
+.ficha-filtro button:hover { background: #b2ddff; }
+/* `all: unset` de arriba se lleva por delante el anillo de foco de la regla
+   general, porque va después. Se repone aquí: un botón sin foco visible es
+   invisible para quien navega con teclado. */
+.ficha-filtro button:focus-visible { outline: 2px solid var(--media); outline-offset: 1px; }
+
+/* ── Tabla ─────────────────────────────────────────────────────────────── */
+
+.marco {
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  overflow: hidden;
+}
+.desplazable { overflow-x: auto; }        /* la tabla desplaza, no la página */
+
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+
+thead th {
+  position: sticky;                        /* la cabecera no se pierde al bajar */
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-medio);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+  white-space: nowrap;
+}
+
+tbody td {
+  height: var(--alto-fila);
+  padding: 0.3rem 0.75rem;
+  border-bottom: 1px solid var(--borde-suave);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:nth-child(even) { background: var(--superficie-alt); }
+tbody tr:hover { background: #eef4fb; }
+td.asunto { max-width: 26rem; }
+td.asunto span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-medio);
+}
+
+/* ── Fichas de estado y prioridad ──────────────────────────────────────── */
+
+/* Cada ficha lleva SIEMPRE su texto. El color acompaña, no sustituye. */
+.ficha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 550;
+  white-space: nowrap;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+.ficha::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.p-critica  { color: var(--critica); background: var(--critica-bg); }
+.p-alta     { color: var(--alta);    background: var(--alta-bg); }
+.p-media    { color: var(--media);   background: var(--media-bg); }
+.p-baja     { color: var(--baja);    background: var(--baja-bg); }
+
+.e-abierto     { color: var(--media);   background: var(--media-bg); }
+.e-en-proceso  { color: var(--alta);    background: var(--alta-bg); }
+.e-cerrado     { color: var(--verde);   background: var(--verde-bg); }
+.e-reabierto   { color: var(--critica); background: var(--critica-bg); }
+.e-escalado    { color: var(--violeta); background: var(--violeta-bg); }
+.e-otro        { color: var(--baja);    background: var(--baja-bg); }
+
+/* La marca de degradada lleva icono ADEMÁS de color, y es la más ruidosa de
+   la tabla a propósito: distinguir una clasificación del modelo de una de
+   reserva es el error más probable al integrarse con esta API. */
 .degradada {
-  display: inline-block;
-  margin-left: 0.4rem;
-  padding: 0.05rem 0.4rem;
-  border-radius: 3px;
-  background: #fff3cd;
-  border: 1px solid #e0c56a;
-  color: #7a5c00;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.4rem;
   font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--alta);
+  background: var(--alta-bg);
+  border: 1px solid #f0c26a;
+  border-radius: var(--radio-sm);
   cursor: help;
 }
+.degradada svg { width: 11px; height: 11px; flex: none; }
 
-.resumen { color: #666; font-size: 0.85rem; margin: 0 0 0.5rem; }
-.aviso { color: #666; padding: 1rem 0; }
-.nota { color: #666; font-size: 0.8rem; margin-top: 1rem; }
+/* ── Estados de la vista ───────────────────────────────────────────────── */
+
+.pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+.resumen { margin: 0; font-size: 0.78rem; color: var(--texto-medio); font-variant-numeric: tabular-nums; }
+.paginacion { display: flex; gap: 0.4rem; }
+
+.panel {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--texto-medio);
+  background: var(--superficie-alt);
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio);
+}
+.panel strong { display: block; color: var(--texto); margin-bottom: 0.3rem; }
 
 .error {
-  padding: 0.9rem 1rem;
-  background: #fdf2f2;
-  border: 1px solid #e4b1b1;
-  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  background: var(--critica-bg);
+  border: 1px solid #fecdc9;
+  border-left: 3px solid var(--critica);
+  border-radius: var(--radio);
   margin-bottom: 1rem;
 }
-.error strong { color: #9b1c1c; font-family: ui-monospace, monospace; font-size: 0.85rem; }
-.error p { margin: 0.4rem 0 0; }
-.error .traza { font-size: 0.8rem; color: #666; }
+.error .codigo {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--critica);
+}
+.error p { margin: 0.35rem 0 0; font-size: 0.85rem; }
+.error .traza { font-size: 0.75rem; color: var(--texto-medio); }
+.error pre {
+  margin: 0.6rem 0 0;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.75rem;
+  background: #fff;
+  border: 1px solid #fecdc9;
+  border-radius: var(--radio-sm);
+  overflow-x: auto;
+}
 
-.paginacion { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--texto-medio);
+}
+
+/* ── Ancho reducido ────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  :host { padding: 1rem; }
+  .filtros select { min-width: 0; width: 100%; }
+  .filtros label { flex: 1 1 8rem; }
+  .acciones { margin-left: 0; width: 100%; }
+  .acciones button { flex: 1; justify-content: center; }
+  .indicadores { gap: 1rem; }
+}
