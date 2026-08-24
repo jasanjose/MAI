@@ -283,7 +283,10 @@ formal; clasificar mal cuesta un minuto de un analista.
 ### Observabilidad
 
 `GET /metricas` — latencias p50/p95/p99 por operación, tasa de degradación y
-de abstención **con su desglose por motivo**, y tokens por proveedor. El
+de abstención **con su desglose por motivo**, y tokens por proveedor,
+separando los que el modelo gastó razonando —que van dentro de los de salida,
+no aparte, y son lo único que distingue un modelo verboso de uno que razona de
+más—. El
 desglose es lo que hace accionable la tasa: un proveedor caído y un modelo
 que devuelve basura degradan igual y exigen acciones opuestas.
 

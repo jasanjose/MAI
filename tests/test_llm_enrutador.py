@@ -7,7 +7,7 @@ import pytest
 from mai.adaptadores.llm.enrutador import EnrutadorLLM
 from mai.adaptadores.llm.falso import AdaptadorFalso
 from mai.dominio.clasificacion import MOTIVO_PROVEEDOR_CAIDO, ORIGEN_DEGRADADO, Clasificador
-from mai.dominio.puertos import CadenaAgotada, ProveedorLLM
+from mai.dominio.puertos import CadenaAgotada, ProveedorLLM, RespuestaLLM
 
 
 def test_la_cadena_cumple_el_contrato_del_puerto():
@@ -175,3 +175,35 @@ def test_la_cadena_agotada_activa_el_modo_degradado_del_dominio():
     assert resultado.motivo_degradacion == MOTIVO_PROVEEDOR_CAIDO
     assert resultado.categoria == "Accesos"
     assert resultado.confianza == "baja"
+
+
+def test_el_enrutador_propaga_el_desglose_de_razonamiento_al_colector():
+    """El desglose viaja desde la respuesta del proveedor hasta las métricas.
+
+    Se recolecta en la cadena y no en cada adaptador porque toda llamada pasa
+    por aquí: un solo punto, y los adaptadores no conocen al colector.
+    """
+    medido = []
+
+    class ProveedorQueRazona(ProveedorLLM):
+        @property
+        def nombre(self) -> str:
+            return "razonador"
+
+        def completar(self, instruccion: str, entrada: str) -> RespuestaLLM:
+            return RespuestaLLM(
+                texto="ok",
+                proveedor="razonador",
+                modelo="m",
+                latencia_ms=1.0,
+                tokens_entrada=100,
+                tokens_salida=40,
+                tokens_razonamiento=33,
+            )
+
+    EnrutadorLLM(
+        [ProveedorQueRazona()],
+        al_medir=lambda *argumentos: medido.append(argumentos),
+    ).completar("instruccion", "entrada")
+
+    assert medido == [("razonador", 100, 40, 33)]
