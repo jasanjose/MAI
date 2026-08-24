@@ -15,7 +15,12 @@ justo lo que este archivo existe para evitar.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
+
+# Un vector es una lista de números. El dominio no sabe si salieron de contar
+# palabras o de una red neuronal: solo que se pueden comparar entre sí.
+Vector = tuple[float, ...]
 
 
 class ErrorProveedorLLM(Exception):
@@ -107,4 +112,43 @@ class ProveedorLLM(ABC):
         los reintentos, o `RespuestaInutilizable` si respondió algo que no
         se puede leer. Nunca propaga una excepción de la librería de
         transporte.
+        """
+
+
+class Vectorizador(ABC):
+    """Contrato de quien convierte texto en vectores comparables.
+
+    Existe por la misma razón que `ProveedorLLM`: la recuperación no debe
+    saber si detrás hay un conteo de palabras o un modelo de embeddings
+    remoto. Cambiar de uno a otro es cambiar configuración.
+
+    **Los dos métodos no son el mismo con distinto nombre.** Un vectorizador
+    que aprende del corpus —TF-IDF necesita saber en cuántos documentos
+    aparece cada término— hace ese trabajo en `indexar`, y `consultar` debe
+    usar exactamente la representación aprendida allí. Con un solo método
+    genérico, quien lo implemente tendría que adivinar cuándo aprender, y
+    vectorizar la consulta con un vocabulario distinto del corpus produce
+    similitudes que no significan nada.
+
+    Un vectorizador que no aprende —una API de embeddings— implementa los dos
+    igual, y eso está bien: el contrato admite ambos sin que el dominio note
+    la diferencia.
+    """
+
+    @property
+    @abstractmethod
+    def nombre(self) -> str:
+        """Identificador para el registro: `tfidf`, `openai`…"""
+
+    @abstractmethod
+    def indexar(self, textos: Sequence[str]) -> list[Vector]:
+        """Vectoriza el corpus completo. Aquí aprende, si tiene que aprender."""
+
+    @abstractmethod
+    def consultar(self, texto: str) -> Vector:
+        """Vectoriza una consulta con la representación del corpus indexado.
+
+        Lanza `RuntimeError` si se llama antes de `indexar` en un vectorizador
+        que lo necesita. Devolver un vector con otro vocabulario sería peor:
+        produciría similitudes silenciosamente sin sentido.
         """
