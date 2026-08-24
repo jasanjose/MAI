@@ -32,19 +32,14 @@ from collections.abc import Callable, Mapping
 from mai.adaptadores.llm.compatible import AdaptadorCompatible
 from mai.adaptadores.llm.enrutador import EnrutadorLLM
 from mai.adaptadores.llm.falso import AdaptadorFalso
+from mai.adaptadores.llm.perfiles import PERFILES, perfil_de
 from mai.dominio.puertos import ProveedorLLM
 
 NOMBRE_FALSO = "falso"
 
-# Los proveedores que hablan Chat Completions y sus prefijos de variable.
-# Añadir uno nuevo es añadir una línea aquí y tres variables al entorno.
-PROVEEDORES_COMPATIBLES: dict[str, str] = {
-    "groq": "GROQ",
-    "dashscope": "DASHSCOPE",
-    "openai": "OPENAI",
-    "openrouter": "OPENROUTER",
-    "ollama": "OLLAMA",
-}
+# Qué proveedores existen y qué necesita cada uno vive en `perfiles.py`.
+# Aquí se decide quién entra en la cadena y en qué orden; allá, cómo se le
+# habla a cada uno. Añadir un proveedor es una línea en aquella tabla.
 
 VARIABLE_RUTA_CLASIFICACION = "RUTA_CLASIFICACION"
 VARIABLE_RUTA_RAG = "RUTA_RAG"
@@ -112,12 +107,13 @@ def _construir_uno(nombre: str, entorno: Mapping[str, str]) -> ProveedorLLM:
     if nombre == NOMBRE_FALSO:
         return AdaptadorFalso(nombre=NOMBRE_FALSO)
 
-    prefijo = PROVEEDORES_COMPATIBLES.get(nombre)
-    if prefijo is None:
-        conocidos = ", ".join(sorted([*PROVEEDORES_COMPATIBLES, NOMBRE_FALSO]))
+    perfil = perfil_de(nombre)
+    if perfil is None:
+        conocidos = ", ".join(sorted([*PERFILES, NOMBRE_FALSO]))
         raise ConfiguracionInvalida(
             f"Proveedor desconocido: «{nombre}». Los disponibles son: {conocidos}."
         )
+    prefijo = perfil.prefijo_entorno
 
     valores = {
         sufijo: (entorno.get(f"{prefijo}_{sufijo}") or "").strip()
@@ -136,4 +132,5 @@ def _construir_uno(nombre: str, entorno: Mapping[str, str]) -> ProveedorLLM:
         base_url=valores["BASE_URL"],
         api_key=valores["API_KEY"],
         modelo=valores["MODEL"],
+        cuerpo_extra=perfil.cuerpo_extra(),
     )

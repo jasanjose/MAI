@@ -6,9 +6,9 @@
 
 # --- Plan personal y cuaderno de trabajo — NO son entregables -------
 # ai-docs/ es nuestra memoria de trabajo: qué se hizo, qué sigue, qué está
-# pendiente, y la trazabilidad del uso de IA. Misma convención que orion y
-# orionb2b. No es producto: es el andamio con el que se construye el
-# producto. Lo que de aquí sí se entrega se destila a docs/.
+# pendiente, y la trazabilidad del uso de IA. No es producto: es el andamio
+# con el que se construye el producto. Lo que de aquí sí se entrega se
+# destila a docs/.
 ai-docs/
 PLAN_MAI.md
 CLAUDE.local.md
