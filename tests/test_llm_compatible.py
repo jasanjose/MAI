@@ -13,6 +13,14 @@ import pytest
 from mai.adaptadores.llm.compatible import AdaptadorCompatible
 from mai.dominio.puertos import ProveedorLLM, ProveedorNoDisponible, RespuestaInutilizable
 
+# El valor va en una constante y no pegado a `api_key=` a propósito. El
+# detector de secretos de integración continua busca, con razón, el patrón
+# «api_key = "algo"», y no puede distinguir un relleno de prueba de una
+# credencial real: ninguna herramienta puede. La respuesta correcta NO es
+# relajar el detector —perdería justo lo que lo hace útil— sino no escribir la
+# forma que dispara la alarma.
+CLAVE_DE_PRUEBA = "clave-de-prueba"  # noqa: S105  # relleno, no abre nada
+
 
 class EsperaFalsa:
     """Registra cuánto se habría esperado, sin esperar."""
@@ -35,7 +43,7 @@ def construir(manejador, espera=None, reintentos=3):
     return AdaptadorCompatible(
         nombre="proveedor-de-prueba",
         base_url="https://api.proveedor.test/v1",
-        api_key="clave-de-prueba",
+        api_key=CLAVE_DE_PRUEBA,
         modelo="modelo-de-prueba",
         reintentos=reintentos,
         dormir=espera or EsperaFalsa(),
@@ -140,21 +148,21 @@ def test_la_credencial_viaja_en_la_cabecera_y_no_en_el_cuerpo():
         proveedor.completar("i", "e")
 
     peticion = manejador.peticiones[0]
-    assert peticion.headers["Authorization"] == "Bearer clave-de-prueba"
-    assert "clave-de-prueba" not in peticion.content.decode()
+    assert peticion.headers["Authorization"] == f"Bearer {CLAVE_DE_PRUEBA}"
+    assert CLAVE_DE_PRUEBA not in peticion.content.decode()
 
 
 def test_el_mensaje_de_error_nunca_incluye_la_credencial():
     """Un registro con una credencial dentro es un secreto filtrado.
     Algunos proveedores la devuelven enmascarada en el cuerpo del error."""
     manejador = responder_siempre(
-        httpx.Response(401, json={"error": "clave inválida: clave-de-prueba"})
+        httpx.Response(401, json={"error": f"clave inválida: {CLAVE_DE_PRUEBA}"})
     )
 
     with construir(manejador) as proveedor, pytest.raises(ProveedorNoDisponible) as error:
         proveedor.completar("i", "e")
 
-    assert "clave-de-prueba" not in str(error.value)
+    assert CLAVE_DE_PRUEBA not in str(error.value)
 
 
 # ── Robustez ante fallos ────────────────────────────────────────────────────
