@@ -6,10 +6,15 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <!-- La URL de la API se resuelve en tiempo de ejecucion: el mismo paquete
-       compilado sirve en varios ambientes. Recompilar para cambiar una URL es
-       lo que produce "funciona en mi maquina". -->
-  <script>window.MAI_API = window.MAI_API || 'http://127.0.0.1:8000';</script>
+  <!-- Gancho para inyectar la direccion de la API al desplegar, sin
+       recompilar: el mismo paquete sirve en varios ambientes. Recompilar para
+       cambiar una URL es lo que produce "funciona en mi maquina".
+
+       Se deja SIN asignar a proposito. Ponerle aqui el valor por defecto lo
+       hacia ganar siempre, y anulaba en silencio los otros dos escalones que
+       api.ts consulta despues. El valor por defecto vive en un solo sitio, y
+       ese sitio es api.ts. -->
+  <script>/* window.MAI_API = 'https://api.ejemplo'; // lo inyecta el despliegue */</script>
 </head>
 <body>
   <app-root></app-root>
