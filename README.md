@@ -455,10 +455,17 @@ Lo que **no** quedó hecho, y por qué.
   políticas. Con el adaptador falso, toda consulta se abstiene en la
   verificación de cita — que es el comportamiento correcto, porque ese
   adaptador no cita.
-- **La abstención del 100 % no está verificada de extremo a extremo.** La
-  primera puerta sí, con datos reales: descarta 2 de 6 casos sin respaldo.
-  Los otros 4 dependen de que un modelo real diga «no tengo evidencia», y eso
-  no se ha medido.
+- **La abstención del 100 % depende del modelo, y está medida.** Con tres
+  modelos reales sobre los 6 casos sin respaldo: uno abstiene en el 100 % y
+  cumple la condición dura; los otros dos se quedan en el 83 %. El caso que se
+  les cuela es siempre el mismo —una pregunta sobre viáticos a una ciudad
+  extranjera— y las dos puertas lo dejan pasar por construcción: el umbral no
+  lo descarta porque léxicamente sí se parece, y la verificación de cita
+  tampoco, porque el modelo **cita de verdad** un fragmento que recibió. La
+  cita es válida; el hecho que trae no responde la pregunta. Detalle en
+  [`costos.md`](docs/costos.md).
+- **La suite falla el build cuando eso ocurre**, que es lo que la hace una
+  barrera y no un informe: `scripts/evaluar.py` termina en 1.
 - **TF-IDF no reconoce sinonimia.** Medido: «¿qué pasa si pierdo el
   computador?» no recupera su respuesta, que dice «Pérdida, hurto o daño» y
   nunca nombra el aparato. El vectorizador remoto implementa el mismo puerto

@@ -87,9 +87,9 @@ que el proveedor no la mire.
 
 ## 3 · Qué no se midió
 
-- **La tarea de RAG.** Solo se midió clasificación. La proyección de la consulta
-  de políticas sigue siendo la de `arquitectura.md` §7, con sus supuestos
-  declarados.
+- **El costo de la tarea de RAG.** Se midió su comportamiento (abajo), no su
+  consumo: la proyección de tokens de la consulta de políticas sigue siendo la
+  de `arquitectura.md` §7, con sus supuestos declarados.
 - **Una sola pasada por caso.** Con 29 casos y N=1, una diferencia de un acierto
   —los 3,4 puntos entre los dos modelos— está dentro de lo que puede moverse
   entre corridas. La conclusión de costo es firme; la de exactitud, indicativa.
@@ -98,6 +98,47 @@ que el proveedor no la mire.
 - **Descuento por caché de entrada.** Los proveedores lo ofrecen y aquí no se
   aplicó; con un prompt de sistema idéntico entre llamadas, el costo real sería
   menor que el de esta tabla.
+
+---
+
+## 3 bis · La abstención del RAG depende del modelo
+
+Medido el mismo día sobre los 6 casos sin respaldo documental del conjunto de
+referencia, con `scripts/evaluar.py` contra proveedores reales:
+
+| Modelo | Recuperación | Respuestas sin cita | Abstención | ¿Cumple? |
+|---|---:|---:|---:|:--:|
+| DeepSeek Flash *(instantánea posterior)* | 100 % | 0 | **100 %** | ✅ |
+| DeepSeek Flash | 100 % | 0 | 83 % | ❌ |
+| Qwen Flash | 100 % | 0 | 83 % | ❌ |
+
+**La condición dura es alcanzable, pero no con cualquier modelo.** Y el que la
+cumple no es el que gana en clasificación. Esa es la razón medida —ya no solo
+de diseño— de que `RUTA_CLASIFICACION` y `RUTA_RAG` sean cadenas separadas:
+las dos tareas no piden lo mismo, y `metricas.md` §4 ya lo anticipaba al fijar
+la abstención como condición dura y la precisión de clasificación como
+objetivo.
+
+### El caso que se cuela, y por qué las dos puertas no lo ven
+
+Es una pregunta por el viático de una ciudad extranjera. El corpus solo tiene
+montos nacionales.
+
+- **La primera puerta no lo descarta** porque léxicamente sí se parece: habla
+  de viáticos y de una ciudad. [`calibracion_umbral.md`](calibracion_umbral.md)
+  ya lo había medido — puntúa más alto que 18 de las 21 consultas legítimas.
+- **La segunda tampoco**, y esto es lo que no estaba previsto: el modelo **cita
+  de verdad** un fragmento que se le entregó. La cita es verificable y
+  auténtica. Lo que no es cierto es que ese fragmento responda la pregunta.
+
+**Verificar que una cita existe no verifica que sea pertinente.** Ese es el
+límite del diseño actual, y ahora está medido en vez de supuesto. Cerrarlo
+pide una tercera comprobación —que el fragmento citado contenga el dato
+concreto que la pregunta busca— que no está construida.
+
+Mientras tanto, la mitigación es de configuración y no de código: poner en
+`RUTA_RAG` un modelo que sí cumple. La suite lo verifica en cada ejecución y
+**falla el build** si deja de cumplirse.
 
 ---
 
