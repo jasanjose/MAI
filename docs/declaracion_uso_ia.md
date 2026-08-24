@@ -31,7 +31,7 @@ Se usó además el propio repositorio como herramienta de verificación: `ruff`,
 - **El adaptador `compatible`** para proveedores que hablan Chat Completions.
   Un archivo para cinco proveedores; se conservó sin cambios porque la forma
   del protocolo no admite variantes interesantes.
-- **El grueso de las 501 pruebas.** Los nombres describen comportamiento y
+- **El grueso de las 519 pruebas.** Los nombres describen comportamiento y
   las docstrings explican por qué existe cada caso de borde; eso se revisó,
   no se aceptó a ciegas.
 - **El flujo de integración continua**, que corrió en verde a la primera.
@@ -150,6 +150,39 @@ persona.
 prueba fallando en un commit anterior al arreglo. Son cuatro pares en el
 historial. Sin la prueba en rojo previa no hay evidencia de haber entendido
 la causa; solo de que el síntoma dejó de verse.
+
+---
+
+## Qué datos salieron de la máquina, y hacia dónde
+
+Se declara aparte porque es la pregunta que el punto crítico 5 hace y este
+formato no: *«ningún dato real de la compañía en herramientas externas».*
+
+**Qué se envió.** El texto de solicitudes —asunto y descripción— a proveedores
+de modelos de lenguaje, para medir clasificación y consulta de políticas contra
+un proveedor real. Y las preguntas del conjunto de referencia junto con los
+fragmentos de política recuperados, que es lo que un sistema RAG envía por
+definición.
+
+**Qué NO se envió, y está impuesto en el código.** El solicitante y su correo.
+El clasificador recibe **solo asunto y descripción**; la restricción vive en
+`dominio/solicitudes.py`, no en una convención que se pueda olvidar. Al cargar
+la muestra del histórico para la demostración, el remitente se sustituyó por un
+identificador opaco antes de que la solicitud existiera.
+
+**Por qué es admisible.** El enunciado declara que **todos los datos de los
+materiales son sintéticos** y prohíbe usar datos *reales* de la compañía. No se
+usó ninguno: no se tuvo acceso a ninguno.
+
+**Qué haría distinto en producción, donde los datos sí serían reales.** El
+estándar del proyecto (`CLAUDE.md` §5.3) ya exige anonimizar antes de enviar,
+y el código cumple esa parte para el solicitante. Lo que NO está resuelto es el
+cuerpo del ticket: una descripción escrita por una persona puede contener un
+número de cédula o un teléfono, y hoy nada lo detecta antes de salir. Haría
+falta una pasada de reconocimiento de datos personales sobre el texto libre, y
+no está construida. **Es el límite de seguridad más importante que queda
+abierto**, y no se descubrió revisando código: apareció al enviar datos de
+verdad por primera vez.
 
 ---
 
